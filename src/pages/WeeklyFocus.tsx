@@ -35,14 +35,14 @@ export default function WeeklyFocus() {
 
   const totalAlloc = activeRoles.reduce((sum, role) => sum + (weekly.roleAllocation[role.id] || 0), 0);
 
-  const statusLabels: Record<TaskStatus, string> = { todo: "鏈紑濮?, doing: "杩涜涓?, done: "宸插畬鎴? };
+  const statusLabels: Record<TaskStatus, string> = { todo: "未开始", doing: "进行中", done: "已完成" };
   const nextStatus: Record<TaskStatus, TaskStatus> = { todo: "doing", doing: "done", done: "todo" };
 
   return (
     <div className="min-h-screen pb-28">
       <div className="page-shell">
         <div className="mb-6 fade-in">
-          <h1 className="text-2xl font-bold tracking-tight">鏈懆涓荤嚎</h1>
+          <h1 className="text-2xl font-bold tracking-tight">本周主线</h1>
           <p className="text-sm text-muted-foreground">{weekLabel}</p>
           <div className="mt-2">
             <PilotBadge />
@@ -51,24 +51,24 @@ export default function WeeklyFocus() {
 
         {/* Weekly Theme */}
         <section className="mb-6 fade-in">
-          <h2 className="text-sm font-medium text-muted-foreground mb-2">鏈懆鍞竴涓婚</h2>
+          <h2 className="text-sm font-medium text-muted-foreground mb-2">本周唯一主题</h2>
           <input
             type="text"
             value={weekly.theme}
             onChange={(e) => update({ theme: e.target.value })}
-            placeholder="杩欏懆鍒板簳鍦ㄦ墦浠€涔堜粭锛?
+            placeholder="这周到底在打什么仗？"
             className="w-full rounded-xl border bg-card p-4 text-base font-semibold outline-none placeholder:text-muted-foreground/30 focus:ring-1 focus:ring-primary/30"
           />
         </section>
 
         {/* 3 Battles */}
         <section className="mb-6 fade-in">
-          <h2 className="text-sm font-medium text-muted-foreground mb-2">鈿旓笍 涓夊満鍏抽敭鎴?/h2>
+          <h2 className="text-sm font-medium text-muted-foreground mb-2">⚔️ 三场关键战</h2>
           <div className="space-y-3">
             {weekly.battles.map((battle, i) => (
               <div key={i} className="rounded-xl border bg-card p-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">鎴樺焦 {i + 1}</span>
+                  <span className="text-xs text-muted-foreground">战役 {i + 1}</span>
                   <button
                     onClick={() => updateBattle(i, { status: nextStatus[battle.status] })}
                     className={`rounded-md px-2 py-0.5 text-xs font-medium ${
@@ -86,14 +86,14 @@ export default function WeeklyFocus() {
                   type="text"
                   value={battle.name}
                   onChange={(e) => updateBattle(i, { name: e.target.value })}
-                  placeholder="鎴樺焦鍚嶇О"
+                  placeholder="战役名称"
                   className="w-full bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground/30"
                 />
                 <input
                   type="text"
                   value={battle.why}
                   onChange={(e) => updateBattle(i, { why: e.target.value })}
-                  placeholder="涓轰粈涔堥噸瑕侊紵"
+                  placeholder="为什么重要？"
                   className="w-full bg-transparent text-xs text-muted-foreground outline-none placeholder:text-muted-foreground/30"
                 />
               </div>
@@ -103,7 +103,7 @@ export default function WeeklyFocus() {
 
         {/* Role Allocation */}
         <section className="mb-6 fade-in">
-          <h2 className="text-sm font-medium text-muted-foreground mb-2">馃搳 瑙掕壊閰嶆瘮</h2>
+          <h2 className="text-sm font-medium text-muted-foreground mb-2">📊 角色配比</h2>
           <div className="rounded-xl border bg-card p-4 space-y-3">
             {activeRoles.map((role) => {
               const val = weekly.roleAllocation[role.id] || 0;
@@ -129,14 +129,14 @@ export default function WeeklyFocus() {
               );
             })}
             {totalAlloc !== 100 && (
-              <p className="text-xs text-destructive">褰撳墠鎬昏 {totalAlloc}%锛屽缓璁皟鏁村埌 100%</p>
+              <p className="text-xs text-destructive">当前总计 {totalAlloc}%，建议调整到 100%</p>
             )}
           </div>
         </section>
 
         {/* Not To Do */}
         <section className="mb-6 fade-in">
-          <h2 className="text-sm font-medium text-muted-foreground mb-2">馃毇 鏈懆涓嶅仛娓呭崟</h2>
+          <h2 className="text-sm font-medium text-muted-foreground mb-2">🚫 本周不做清单</h2>
           <div className="space-y-1.5">
             {weekly.notToDo.map((item, i) => (
               <div key={i} className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2">
@@ -153,7 +153,7 @@ export default function WeeklyFocus() {
               value={notDoInput}
               onChange={(e) => setNotDoInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addNotDo()}
-              placeholder="杩欏懆鏄庣‘涓嶅仛浠€涔堬紵"
+              placeholder="这周明确不做什么？"
               className="flex-1 rounded-lg border bg-card px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/30 focus:ring-1 focus:ring-primary/30"
             />
             <button onClick={addNotDo} className="rounded-lg bg-primary p-2 text-primary-foreground">

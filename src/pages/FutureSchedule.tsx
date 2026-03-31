@@ -20,9 +20,9 @@ import {
 } from "@/lib/store";
 
 const PRIORITY_META: Record<FuturePriority, { label: string; tone: string }> = {
-  low: { label: "浣庝紭鍏堢骇", tone: "bg-secondary text-secondary-foreground" },
-  medium: { label: "涓紭鍏堢骇", tone: "bg-primary/10 text-primary" },
-  high: { label: "楂樹紭鍏堢骇", tone: "bg-destructive/10 text-destructive" },
+  low: { label: "低优先级", tone: "bg-secondary text-secondary-foreground" },
+  medium: { label: "中优先级", tone: "bg-primary/10 text-primary" },
+  high: { label: "高优先级", tone: "bg-destructive/10 text-destructive" },
 };
 
 export default function FutureSchedule() {
@@ -72,13 +72,13 @@ export default function FutureSchedule() {
     setTime("");
     setPriority("medium");
     setRoleId("");
-    toast({ title: "宸蹭繚瀛樺埌鏈潵瀹夋帓", description: "杩欐潯鏈潵浜嬮」宸茬粡杩涘叆鍒楄〃銆? });
+    toast({ title: "已保存到未来安排", description: "这条未来事项已经进入列表。" });
   };
 
   const removeItem = (id: string, silent = false) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
     if (!silent) {
-      toast({ title: "宸插垹闄?, description: "杩欐潯鏈潵浜嬮」宸茬Щ鍑哄垪琛ㄣ€? });
+      toast({ title: "已删除", description: "这条未来事项已移出列表。" });
     }
   };
 
@@ -87,10 +87,10 @@ export default function FutureSchedule() {
     if (!item) return;
 
     const scheduledTitle = item.time ? `${item.time} ${item.title}` : item.title;
-    const taskTitle = item.notes ? `${scheduledTitle}锝?{item.notes}` : scheduledTitle;
+    const taskTitle = item.notes ? `${scheduledTitle}｜${item.notes}` : scheduledTitle;
     setEntry((prev) => appendSupportTask(prev, taskTitle));
     removeItem(id, true);
-    toast({ title: "宸叉媺鍏ヤ粖澶?, description: "杩欐潯鏈潵浜嬮」宸茬粡杩涘叆浠婃棩鏀拺浠诲姟銆? });
+    toast({ title: "已拉入今天", description: "这条未来事项已经进入今日支撑任务。" });
   };
 
   const moveToWeek = (id: string) => {
@@ -103,7 +103,7 @@ export default function FutureSchedule() {
     setWeekly((prev) => {
       const result = insertIntoWeeklyBattles(prev, {
         title: item.title,
-        why: item.notes || `鏉ヨ嚜鏈潵瀹夋帓锛?{scheduleText || item.date}`,
+        why: item.notes || `来自未来安排：${scheduleText || item.date}`,
       });
       inserted = result.inserted;
       return result.nextWeekly;
@@ -113,7 +113,7 @@ export default function FutureSchedule() {
       setDrafts((prev) => [
         createDraftItem({
           title: item.title,
-          notes: item.notes || `鍘熻鍒掓椂闂达細${scheduleText || item.date}`,
+          notes: item.notes || `原计划时间：${scheduleText || item.date}`,
           status: "pending",
           source: "future->week",
           relatedRoleId: item.relatedRoleId,
@@ -122,9 +122,9 @@ export default function FutureSchedule() {
         }),
         ...prev,
       ]);
-      toast({ title: "宸茶浆鍏ユ湰鍛ㄥ緟澶勭悊", description: "鏈懆鎴樺焦宸叉弧锛屽厛鏀捐繘寰呭鐞嗘睜銆? });
+      toast({ title: "已转入本周待处理", description: "本周战役已满，先放进待处理池。" });
     } else {
-      toast({ title: "宸叉媺鍏ユ湰鍛?, description: "杩欐潯鏈潵浜嬮」宸茬粡杩涘叆鏈懆涓荤嚎銆? });
+      toast({ title: "已拉入本周", description: "这条未来事项已经进入本周主线。" });
     }
 
     removeItem(id, true);
@@ -140,18 +140,18 @@ export default function FutureSchedule() {
   const timePreview = parsedInput.time
     ? parsedInput.time
     : parsedInput.timeHint
-      ? `${parsedInput.timeHint}锛堟湭缁欏叿浣撴椂鍒嗭級`
+      ? `${parsedInput.timeHint}（未给具体时分）`
       : hasQuickInput
-        ? "鏈瘑鍒紝鍙暀绌?
-        : "绛変綘杈撳叆鍚庤嚜鍔ㄨВ鏋?;
+        ? "未识别，可留空"
+        : "等你输入后自动解析";
 
   return (
     <div className="min-h-screen pb-28">
       <div className="page-shell">
         <div className="mb-6 flex items-start justify-between gap-3 fade-in">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">鏈潵瀹夋帓</h1>
-            <p className="text-sm text-muted-foreground">涓嶆槸鏃ュ巻锛屽彧鏄妸甯︽棩鏈熺殑鏈潵浜嬮」鍏堟斁濂姐€?/p>
+            <h1 className="text-2xl font-bold tracking-tight">未来安排</h1>
+            <p className="text-sm text-muted-foreground">不是日历，只是把带日期的未来事项先放好。</p>
             <div className="mt-2">
               <PilotBadge />
             </div>
@@ -163,33 +163,34 @@ export default function FutureSchedule() {
           <div className="rounded-2xl border bg-card p-4">
             <div className="mb-3 flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-medium">鑷劧璇█蹇€熷綍鍏?/h2>
+              <h2 className="text-sm font-medium">自然语言快速录入</h2>
             </div>
             <div className="space-y-2">
               <textarea
                 value={quickInput}
                 onChange={(e) => setQuickInput(e.target.value)}
-                placeholder="渚嬪锛氭槑澶╀笅鍗堜袱鐐圭粰閲戣€佸笀鍙戝悎浣滄柟妗?
+                placeholder="例如：明天下午两点给金老师发合作方案"
                 className="min-h-24 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/30 focus:ring-1 focus:ring-primary/30"
               />
               <p className="text-xs leading-5 text-muted-foreground">
-                鍙互鐩存帴鎵撲竴鏁村彞璇濓紝涔熷彲浠ョ洿鎺ョ敤绯荤粺璇煶杈撳叆娉曡涓€鍙ャ€?              </p>
+                可以直接打一整句话，也可以直接用系统语音输入法说一句。
+              </p>
               <div className="rounded-xl bg-secondary/50 p-3">
                 <div className="space-y-1.5 text-sm">
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-muted-foreground">鏃ユ湡</span>
+                    <span className="text-muted-foreground">日期</span>
                     <span className="text-right font-medium text-foreground">
-                      {date || (hasQuickInput ? "鏈瘑鍒紝鍙墜鍔ㄨˉ" : "绛変綘杈撳叆鍚庤嚜鍔ㄨВ鏋?)}
+                      {date || (hasQuickInput ? "未识别，可手动补" : "等你输入后自动解析")}
                     </span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-muted-foreground">鏃堕棿</span>
+                    <span className="text-muted-foreground">时间</span>
                     <span className="text-right font-medium text-foreground">{timePreview}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-muted-foreground">浜嬮」</span>
+                    <span className="text-muted-foreground">事项</span>
                     <span className="text-right font-medium text-foreground">
-                      {title || (hasQuickInput ? "鏈瘑鍒紝璇锋墜鍔ㄨˉ姝ｆ枃" : "绛変綘杈撳叆鍚庤嚜鍔ㄨВ鏋?)}
+                      {title || (hasQuickInput ? "未识别，请手动补正文" : "等你输入后自动解析")}
                     </span>
                   </div>
                 </div>
@@ -197,7 +198,7 @@ export default function FutureSchedule() {
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="琛ュ厖璇存槑锛堝彲閫夛級"
+                placeholder="补充说明（可选）"
                 className="min-h-24 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/30 focus:ring-1 focus:ring-primary/30"
               />
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -205,7 +206,7 @@ export default function FutureSchedule() {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="浜嬮」姝ｆ枃"
+                  placeholder="事项正文"
                   className="rounded-lg border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/30 focus:ring-1 focus:ring-primary/30"
                 />
                 <input
@@ -227,9 +228,9 @@ export default function FutureSchedule() {
                   onChange={(e) => setPriority(e.target.value as FuturePriority)}
                   className="rounded-lg border bg-background px-3 py-2 text-sm"
                 >
-                  <option value="low">浣庝紭鍏堢骇</option>
-                  <option value="medium">涓紭鍏堢骇</option>
-                  <option value="high">楂樹紭鍏堢骇</option>
+                  <option value="low">低优先级</option>
+                  <option value="medium">中优先级</option>
+                  <option value="high">高优先级</option>
                 </select>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -238,7 +239,7 @@ export default function FutureSchedule() {
                   onChange={(e) => setRoleId(e.target.value)}
                   className="w-full flex-1 rounded-lg border bg-background px-3 py-2 text-sm"
                 >
-                  <option value="">鍏宠仈瑙掕壊锛堝彲閫夛級</option>
+                  <option value="">关联角色（可选）</option>
                   {activeRoles.map((role) => (
                     <option key={role.id} value={role.id}>
                       {role.name}
@@ -250,7 +251,8 @@ export default function FutureSchedule() {
                   disabled={!title.trim() || !date}
                   className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground sm:w-auto"
                 >
-                  淇濆瓨鍒版湭鏉ュ畨鎺?                </button>
+                  保存到未来安排
+                </button>
               </div>
             </div>
           </div>
@@ -260,7 +262,7 @@ export default function FutureSchedule() {
           {sortedItems.length === 0 ? (
             <div className="rounded-2xl border border-dashed bg-card/60 p-6 text-center">
               <CalendarRange className="mx-auto h-6 w-6 text-muted-foreground/60" />
-              <p className="mt-2 text-sm text-muted-foreground">鎯冲埌鏈夋棩鏈熺殑浜嬶紝灏卞厛鏀捐繖閲岋紝鍒瀹冭捀鍙戙€?/p>
+              <p className="mt-2 text-sm text-muted-foreground">想到有日期的事，就先放这里，别让它蒸发。</p>
             </div>
           ) : (
             sortedItems.map((item) => {
@@ -307,14 +309,14 @@ export default function FutureSchedule() {
                       onClick={() => moveToToday(item.id)}
                       className="rounded-lg border px-3 py-2 text-xs font-medium text-foreground"
                     >
-                      鎷夊叆浠婂ぉ
+                      拉入今天
                     </button>
                     <button
                       onClick={() => moveToWeek(item.id)}
                       className="flex items-center justify-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground"
                     >
                       <Clock3 className="h-3.5 w-3.5" />
-                      鎷夊叆鏈懆
+                      拉入本周
                     </button>
                   </div>
                 </div>

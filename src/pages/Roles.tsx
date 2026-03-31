@@ -24,15 +24,15 @@ export default function Roles() {
     <div className="min-h-screen pb-28">
       <div className="page-shell">
         <div className="mb-6 fade-in">
-          <h1 className="text-2xl font-bold tracking-tight">瑙掕壊韬唤</h1>
-          <p className="text-sm text-muted-foreground">鐪嬭浣犵殑鏃堕棿閮借姳鍦ㄤ簡鍝釜瑙掕壊涓?/p>
+          <h1 className="text-2xl font-bold tracking-tight">角色身份</h1>
+          <p className="text-sm text-muted-foreground">看见你的时间都花在了哪个角色上</p>
         </div>
 
         {/* Distribution Chart */}
         {chartData.length > 0 && (
           <section className="mb-6 fade-in">
             <div className="rounded-xl border bg-card p-4">
-              <h2 className="text-sm font-medium text-muted-foreground mb-3">鏈懆瑙掕壊鍒嗗竷</h2>
+              <h2 className="text-sm font-medium text-muted-foreground mb-3">本周角色分布</h2>
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -73,7 +73,7 @@ export default function Roles() {
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="text-sm font-semibold">{role.name}</h3>
                   <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
-                    鏈懆 {alloc}%
+                    本周 {alloc}%
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mb-2">{role.desc}</p>
