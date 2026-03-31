@@ -15,55 +15,43 @@ import {
   type DailyReview,
   type DraftStatus,
 } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
-const FAIL_REASONS = [
-  { value: "too_big", label: "目标定得太大" },
-  { value: "interrupted", label: "被突发事件打断" },
-  { value: "avoided", label: "自己在回避" },
-  { value: "dependency", label: "依赖别人未完成" },
-];
-
-const DRIFT_OPTIONS = [
-  { value: "no" as const, label: "没有" },
-  { value: "slight" as const, label: "有一点" },
-  { value: "major" as const, label: "明显偏了" },
-];
-
-const ENERGY_ACCURACY = [
-  { value: "accurate" as const, label: "很准" },
-  { value: "ok" as const, label: "一般" },
-  { value: "wrong" as const, label: "不准" },
-];
+function makeReview(review?: DailyReview): DailyReview {
+  return {
+    sacredDone: review?.sacredDone ?? false,
+    failReason: review?.failReason ?? "",
+    bestProgress: review?.bestProgress ?? "",
+    stuckPoint: review?.stuckPoint ?? "",
+    mood: review?.mood ?? "",
+    loopingThought: review?.loopingThought ?? "",
+    tomorrowRole: review?.tomorrowRole ?? "",
+    tomorrowSacred: review?.tomorrowSacred ?? "",
+    completed: review?.completed ?? false,
+    drifted: review?.drifted ?? "no",
+    energyAccurate: review?.energyAccurate ?? "accurate",
+  };
+}
 
 export default function Review() {
   const [entry, setEntry] = useDailyEntry();
   const [drafts, setDrafts] = useDraftBox();
   const [roles] = useRoles();
   const activeRoles = getActiveRoles(roles);
-  const dateStr = format(new Date(), "M月d日 EEEE", { locale: zhCN });
-
-  const review: DailyReview = entry.review || {
-    sacredDone: entry.sacredTask.done,
-    failReason: "",
-    drifted: "no",
-    energyAccurate: "accurate",
-    bestProgress: "",
-    tomorrowRole: "",
-    tomorrowSacred: "",
-    completed: false,
-  };
+  const review = makeReview(entry.review);
+  const dateLabel = format(new Date(), "M月d日 EEEE", { locale: zhCN });
 
   const updateReview = (patch: Partial<DailyReview>) => {
     setEntry((prev) => ({ ...prev, review: { ...review, ...patch } }));
   };
 
   const unresolvedItems = [
-    ...(!review.sacredDone && entry.sacredTask.title
+    ...(!review.sacredDone && entry.sacredTask.title.trim()
       ? [
           {
             id: "sacred",
             title: entry.sacredTask.title,
-            notes: review.failReason ? `未完成原因：${review.failReason}` : "",
+            notes: review.failReason,
             relatedRoleId: entry.sacredTask.role || entry.mainRole || undefined,
             source: `review:${entry.date}:sacred`,
           },
@@ -74,7 +62,7 @@ export default function Review() {
       .map((item) => ({
         id: item.id,
         title: item.title,
-        notes: item.status === "doing" ? "今天已开始，尚未完成" : "",
+        notes: item.status === "doing" ? "今天已经开始了" : "",
         relatedRoleId: item.role || entry.mainRole || undefined,
         source: `review:${entry.date}:kr:${item.id}`,
       })),
@@ -108,151 +96,161 @@ export default function Review() {
       }),
       ...prev,
     ]);
+
     toast({
-      title: status === "pending" ? "已转入待处理" : "已转入草稿",
-      description: "这条未完成项已经被安全收口。",
+      title: status === "pending" ? "已放进待处理" : "已放进草稿",
+      description: "这条没做完的事已经收口。",
     });
   };
-
-  const RadioGroup = ({
-    options,
-    value,
-    onChange,
-  }: {
-    options: { value: string; label: string }[];
-    value: string;
-    onChange: (v: string) => void;
-  }) => (
-    <div className="flex flex-wrap gap-2">
-      {options.map((option) => (
-        <button
-          key={option.value}
-          onClick={() => onChange(option.value)}
-          className={`card-press rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-            value === option.value
-              ? "bg-primary text-primary-foreground"
-              : "bg-secondary text-secondary-foreground"
-          }`}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
 
   return (
     <div className="min-h-screen pb-28">
       <div className="page-shell">
-        <div className="mb-6 flex items-start justify-between gap-3 fade-in">
+        <header className="page-header fade-in">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">晚间复盘</h1>
-            <p className="text-sm text-muted-foreground">{dateStr} · 先收口，再下班。</p>
-            <div className="mt-2">
+            <p className="page-caption mt-0 text-foreground">{dateLabel}</p>
+            <h1 className="page-title mt-2">复盘</h1>
+            <div className="page-badges">
               <PilotBadge />
             </div>
           </div>
           <HeaderActionLink />
-        </div>
+        </header>
 
-        <section className="mb-6 fade-in">
-          <h2 className="mb-2 text-sm font-medium text-muted-foreground">神圣任务完成了吗？</h2>
-          {entry.sacredTask.title ? (
-            <div className="mb-3 rounded-xl border-2 border-sacred-border bg-sacred-bg p-4">
-              <p className="text-sm font-semibold">{entry.sacredTask.title}</p>
+        <section className="section-block fade-in">
+          <div className="section-bar">
+            <h2 className="section-title">最重要的那件事</h2>
+          </div>
+          <div className="hero-panel px-4 py-4">
+            <p className="text-sm font-semibold text-foreground">
+              {entry.sacredTask.title.trim() || "今天还没写神圣任务"}
+            </p>
+            <div className="mt-3 flex gap-2">
+              {[
+                { value: true, label: "完成" },
+                { value: false, label: "没完成" },
+              ].map((option) => (
+                <button
+                  key={String(option.value)}
+                  onClick={() => updateReview({ sacredDone: option.value })}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-xs font-medium transition-all",
+                    review.sacredDone === option.value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground"
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
-          ) : (
-            <p className="mb-3 text-sm text-muted-foreground">今天没有设定神圣任务</p>
-          )}
-          <RadioGroup
-            options={[
-              { value: "true", label: "已完成" },
-              { value: "false", label: "没完成" },
-            ]}
-            value={String(review.sacredDone)}
-            onChange={(value) => updateReview({ sacredDone: value === "true" })}
-          />
-        </section>
-
-        {!review.sacredDone && (
-          <section className="mb-6 fade-in">
-            <h2 className="mb-2 text-sm font-medium text-muted-foreground">未完成原因</h2>
-            <RadioGroup
-              options={FAIL_REASONS}
+            <input
+              type="text"
               value={review.failReason}
-              onChange={(value) => updateReview({ failReason: value })}
+              onChange={(event) => updateReview({ failReason: event.target.value })}
+              placeholder="结果 / 原因"
+              className="mt-3 w-full border-none bg-transparent px-0 py-0 text-sm text-foreground shadow-none outline-none placeholder:text-muted-foreground/45 focus-visible:shadow-none"
             />
-          </section>
-        )}
-
-        <section className="mb-6 fade-in">
-          <h2 className="mb-2 text-sm font-medium text-muted-foreground">今天有没有掉出主线？</h2>
-          <RadioGroup
-            options={DRIFT_OPTIONS}
-            value={review.drifted}
-            onChange={(value) => updateReview({ drifted: value as DailyReview["drifted"] })}
-          />
+          </div>
         </section>
 
-        <section className="mb-6 fade-in">
-          <h2 className="mb-2 text-sm font-medium text-muted-foreground">今天能量判断准不准？</h2>
-          <RadioGroup
-            options={ENERGY_ACCURACY}
-            value={review.energyAccurate}
-            onChange={(value) =>
-              updateReview({ energyAccurate: value as DailyReview["energyAccurate"] })
-            }
-          />
-        </section>
-
-        <section className="mb-6 fade-in">
-          <h2 className="mb-2 text-sm font-medium text-muted-foreground">今天最值得记录的一件推进</h2>
-          <input
-            type="text"
-            value={review.bestProgress}
-            onChange={(e) => updateReview({ bestProgress: e.target.value })}
-            placeholder="一句话记录..."
-            className="w-full rounded-xl border bg-card p-3 text-sm outline-none placeholder:text-muted-foreground/30 focus:ring-1 focus:ring-primary/30"
-          />
-        </section>
-
-        <section className="mb-6 fade-in">
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground">明天预设</h2>
-          <div className="space-y-3 rounded-xl border bg-card p-4">
-            <div>
-              <label className="text-xs text-muted-foreground">明天的主角色</label>
-              <div className="mt-1 flex flex-wrap gap-1.5">
-                {activeRoles.map((role) => (
-                  <button
-                    key={role.id}
-                    onClick={() => updateReview({ tomorrowRole: role.id })}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-                      review.tomorrowRole === role.id
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-secondary-foreground"
-                    }`}
-                  >
-                    {role.name}
-                  </button>
-                ))}
-              </div>
+        <section className="section-block grid gap-4 fade-in">
+          <div>
+            <div className="section-bar">
+              <h2 className="section-title">今天最值得记的一件推进</h2>
             </div>
-
-            <div>
-              <label className="text-xs text-muted-foreground">明天的神圣任务</label>
+            <div className="stack-card">
               <input
                 type="text"
-                value={review.tomorrowSacred}
-                onChange={(e) => updateReview({ tomorrowSacred: e.target.value })}
-                placeholder="明天最重要的一件事..."
-                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/30 focus:ring-1 focus:ring-primary/30"
+                value={review.bestProgress}
+                onChange={(event) => updateReview({ bestProgress: event.target.value })}
+                placeholder="记一条"
+                className="w-full border-none bg-transparent px-0 py-0 text-sm shadow-none outline-none placeholder:text-muted-foreground/45 focus-visible:shadow-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="section-bar">
+              <h2 className="section-title">今天最卡的一件事</h2>
+            </div>
+            <div className="stack-card">
+              <input
+                type="text"
+                value={review.stuckPoint}
+                onChange={(event) => updateReview({ stuckPoint: event.target.value })}
+                placeholder="卡点"
+                className="w-full border-none bg-transparent px-0 py-0 text-sm shadow-none outline-none placeholder:text-muted-foreground/45 focus-visible:shadow-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="section-bar">
+              <h2 className="section-title">今天的情绪 / 状态</h2>
+            </div>
+            <div className="stack-card">
+              <input
+                type="text"
+                value={review.mood}
+                onChange={(event) => updateReview({ mood: event.target.value })}
+                placeholder="比如：稳、烦、累、顺"
+                className="w-full border-none bg-transparent px-0 py-0 text-sm shadow-none outline-none placeholder:text-muted-foreground/45 focus-visible:shadow-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="section-bar">
+              <h2 className="section-title">脑子里反复出现的念头</h2>
+            </div>
+            <div className="stack-card">
+              <textarea
+                value={review.loopingThought}
+                onChange={(event) => updateReview({ loopingThought: event.target.value })}
+                placeholder="写下来"
+                className="min-h-24 w-full resize-none border-none bg-transparent px-0 py-0 text-sm leading-6 shadow-none outline-none placeholder:text-muted-foreground/45 focus-visible:shadow-none"
               />
             </div>
           </div>
         </section>
 
-        {unresolvedItems.length > 0 ? (
-          <section className="mb-6 fade-in">
-            <h2 className="mb-2 text-sm font-medium text-muted-foreground">今日未完成收口</h2>
+        <section className="section-block fade-in">
+          <div className="section-bar">
+            <h2 className="section-title">明天先抓什么</h2>
+          </div>
+          <div className="surface-card px-4 py-4">
+            <input
+              type="text"
+              value={review.tomorrowSacred}
+              onChange={(event) => updateReview({ tomorrowSacred: event.target.value })}
+              placeholder="明天最先抓的一件事"
+              className="w-full border-none bg-transparent px-0 py-0 text-sm font-medium shadow-none outline-none placeholder:text-muted-foreground/45 focus-visible:shadow-none"
+            />
+            <div className="mt-3 flex flex-wrap gap-2">
+              {activeRoles.map((role) => (
+                <button
+                  key={role.id}
+                  onClick={() => updateReview({ tomorrowRole: role.id })}
+                  className={cn(
+                    "rounded-full border px-3 py-2 text-xs font-medium transition-all",
+                    review.tomorrowRole === role.id
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "bg-white text-foreground"
+                  )}
+                >
+                  {role.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {unresolvedItems.length > 0 && (
+          <section className="section-block fade-in">
+            <div className="section-bar">
+              <h2 className="section-title">没做完的，放哪</h2>
+            </div>
             <div className="space-y-2">
               {unresolvedItems.map((item) => {
                 const movedToPending = drafts.some(
@@ -263,25 +261,25 @@ export default function Review() {
                 );
 
                 return (
-                  <div key={item.source} className="rounded-xl border bg-card p-3">
-                    <p className="text-sm font-medium">{item.title}</p>
+                  <div key={item.source} className="stack-card">
+                    <p className="text-sm font-medium text-foreground">{item.title}</p>
                     {item.notes && (
                       <p className="mt-1 text-xs text-muted-foreground">{item.notes}</p>
                     )}
-                    <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="mt-3 flex gap-2">
                       <button
                         onClick={() => moveToDraftBox(item, "pending")}
                         disabled={movedToPending}
                         className="rounded-lg border px-3 py-2 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {movedToPending ? "已转入待处理" : "转入待处理"}
+                        {movedToPending ? "已放待处理" : "放待处理"}
                       </button>
                       <button
                         onClick={() => moveToDraftBox(item, "draft")}
                         disabled={movedToDraft}
                         className="rounded-lg border px-3 py-2 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {movedToDraft ? "已转入草稿" : "转入草稿"}
+                        {movedToDraft ? "已放草稿" : "放草稿"}
                       </button>
                     </div>
                   </div>
@@ -289,30 +287,24 @@ export default function Review() {
               })}
             </div>
           </section>
-        ) : (
-          <section className="mb-6 fade-in">
-            <div className="rounded-2xl border border-dashed bg-card/60 p-4 text-center">
-              <p className="text-sm font-medium">今天没有需要收口的尾巴。</p>
-              <p className="mt-1 text-sm text-muted-foreground">留一句最佳进展，再设一下明天就够了。</p>
-            </div>
-          </section>
         )}
 
         <button
           onClick={() => updateReview({ completed: true })}
-          className={`card-press w-full rounded-xl p-4 text-sm font-semibold transition-all ${
+          className={cn(
+            "w-full rounded-full px-4 py-3 text-sm font-semibold transition-all",
             review.completed
               ? "bg-success text-success-foreground"
               : "bg-primary text-primary-foreground"
-          }`}
+          )}
         >
           {review.completed ? (
             <span className="flex items-center justify-center gap-2">
               <Check className="h-4 w-4" />
-              复盘已完成
+              今天已经收口
             </span>
           ) : (
-            "完成今日复盘"
+            "收口今天"
           )}
         </button>
       </div>

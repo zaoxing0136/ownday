@@ -173,17 +173,15 @@ export default function Settings() {
   return (
     <div className="min-h-screen pb-28">
       <div className="page-shell">
-        <div className="mb-6 fade-in">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">数据与系统设置</h1>
-              <p className="text-sm text-muted-foreground">
-                先保住数据，再把试运行版调到更顺手。
-              </p>
+        <header className="page-header fade-in">
+          <div>
+            <p className="page-caption mt-0">先保住数据，再慢慢调顺手。</p>
+            <h1 className="page-title mt-2">设置</h1>
+            <div className="page-badges">
+              <PilotBadge />
             </div>
-            <PilotBadge />
           </div>
-        </div>
+        </header>
 
         <section className="mb-6 fade-in">
           <div className="rounded-2xl border bg-card p-4">
@@ -192,7 +190,7 @@ export default function Settings() {
               <h2 className="text-sm font-medium">当前系统状态</h2>
             </div>
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
-              <span className="rounded-full bg-primary/10 px-3 py-1 text-primary">Pilot v0.3</span>
+              <span className="rounded-full bg-primary/10 px-3 py-1 text-primary">Pilot v0.5</span>
               <span className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">
                 启用角色 {activeRoles.length}
               </span>

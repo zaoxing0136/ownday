@@ -5,7 +5,7 @@
 @layer base {
   :root {
     --background: 42 40% 96%;
-    --foreground: 196 20% 18%;
+    --foreground: 196 24% 14%;
 
     --card: 0 0% 100%;
     --card-foreground: 196 20% 18%;
@@ -20,7 +20,7 @@
     --secondary-foreground: 196 18% 24%;
 
     --muted: 38 22% 92%;
-    --muted-foreground: 196 10% 42%;
+    --muted-foreground: 196 10% 34%;
 
     --accent: 154 24% 88%;
     --accent-foreground: 186 19% 24%;
@@ -108,9 +108,9 @@
     min-height: 100vh;
     position: relative;
     background:
-      radial-gradient(circle at top left, hsl(167 28% 82% / 0.48), transparent 34%),
-      radial-gradient(circle at top right, hsl(32 90% 76% / 0.34), transparent 30%),
-      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(40 42% 94%) 100%);
+      radial-gradient(circle at top left, hsl(165 26% 84% / 0.45), transparent 34%),
+      radial-gradient(circle at top right, hsl(32 86% 76% / 0.28), transparent 30%),
+      linear-gradient(180deg, hsl(44 44% 97%) 0%, hsl(36 44% 93%) 100%);
     font-family: var(--body-font);
     -webkit-tap-highlight-color: transparent;
   }
@@ -136,7 +136,7 @@
     width: 56vw;
     height: 44vh;
     border-radius: 999px;
-    background: radial-gradient(circle, hsl(30 88% 68% / 0.16), transparent 72%);
+    background: radial-gradient(circle, hsl(30 88% 68% / 0.16) 0%, transparent 72%);
     filter: blur(16px);
     opacity: 0.9;
     pointer-events: none;
@@ -154,11 +154,11 @@
     position: fixed;
     inset: 0;
     background-image:
-      linear-gradient(hsl(0 0% 100% / 0.28) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(0 0% 100% / 0.28) 1px, transparent 1px);
-    background-size: 32px 32px;
+      linear-gradient(hsl(0 0% 100% / 0.22) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 0% 100% / 0.22) 1px, transparent 1px);
+    background-size: 34px 34px;
     mask-image: linear-gradient(180deg, hsl(0 0% 0% / 0.5), transparent 78%);
-    opacity: 0.18;
+    opacity: 0.12;
     pointer-events: none;
     z-index: -1;
   }
@@ -195,7 +195,7 @@
     background: linear-gradient(180deg, hsl(0 0% 100% / 0.76), hsl(42 52% 97% / 0.84));
     box-shadow:
       inset 0 1px 0 hsl(0 0% 100% / 0.7),
-      0 12px 30px -26px hsl(188 18% 22% / 0.25);
+      0 8px 22px -24px hsl(188 18% 22% / 0.18);
   }
 
   input::placeholder,
@@ -210,27 +210,70 @@
     outline: none;
     box-shadow:
       0 0 0 4px hsl(var(--primary) / 0.12),
-      0 18px 34px -26px hsl(var(--primary) / 0.35);
+      0 12px 24px -24px hsl(var(--primary) / 0.24);
   }
 }
 
 @layer components {
   .page-shell {
-    @apply mx-auto max-w-xl px-4 pt-6 pb-32 sm:px-5;
+    @apply mx-auto max-w-[30rem] px-4 pt-4 pb-32 sm:px-5;
+  }
+
+  .page-header {
+    @apply mb-7 flex items-start justify-between gap-3;
+  }
+
+  .page-title {
+    font-size: clamp(2rem, 6vw, 2.45rem);
+    line-height: 0.98;
+    @apply font-semibold text-foreground;
+  }
+
+  .page-caption {
+    @apply mt-1 text-sm text-muted-foreground;
+  }
+
+  .page-badges {
+    @apply mt-3 flex flex-wrap items-center gap-2;
+  }
+
+  .section-block {
+    @apply mb-7;
+  }
+
+  .section-bar {
+    @apply mb-3 flex items-center gap-3;
+  }
+
+  .section-bar::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, hsl(var(--border) / 0.86), transparent);
+  }
+
+  .section-title {
+    @apply text-[1rem] font-semibold text-foreground;
+    font-family: var(--body-font);
+    letter-spacing: -0.01em;
+  }
+
+  .section-note {
+    @apply text-xs text-muted-foreground;
   }
 
   .hero-panel {
     position: relative;
     overflow: hidden;
     border: 1px solid hsl(var(--border) / 0.76);
-    border-radius: calc(var(--radius) * 2.3);
+    border-radius: calc(var(--radius) * 1.65);
     background:
-      linear-gradient(145deg, hsl(0 0% 100% / 0.78), hsl(40 44% 95% / 0.9)),
-      linear-gradient(180deg, hsl(var(--primary) / 0.03), transparent 62%);
+      linear-gradient(145deg, hsl(0 0% 100% / 0.78), hsl(40 46% 95% / 0.92)),
+      linear-gradient(180deg, hsl(var(--primary) / 0.04), transparent 62%);
     box-shadow:
-      0 30px 80px -42px hsl(192 22% 18% / 0.4),
-      0 18px 42px -32px hsl(28 74% 46% / 0.28);
-    backdrop-filter: blur(24px);
+      0 24px 44px -36px hsl(192 22% 18% / 0.22),
+      0 12px 24px -24px hsl(28 74% 46% / 0.1);
+    backdrop-filter: blur(14px);
   }
 
   .hero-panel::before {
@@ -257,12 +300,12 @@
     position: relative;
     overflow: hidden;
     border: 1px solid hsl(var(--border) / 0.74);
-    border-radius: calc(var(--radius) * 1.95);
-    background: linear-gradient(180deg, hsl(0 0% 100% / 0.72), hsl(42 48% 96% / 0.9));
+    border-radius: calc(var(--radius) * 1.2);
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.68), hsl(42 48% 96% / 0.88));
     box-shadow:
-      0 24px 60px -42px hsl(192 22% 18% / 0.36),
-      0 14px 36px -30px hsl(28 74% 46% / 0.24);
-    backdrop-filter: blur(18px);
+      0 14px 26px -26px hsl(192 22% 18% / 0.16),
+      0 8px 18px -20px hsl(28 74% 46% / 0.1);
+    backdrop-filter: blur(10px);
   }
 
   .surface-card::before {
@@ -290,17 +333,55 @@
 
   .glass-chip {
     @apply inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium text-foreground;
-    background: hsl(0 0% 100% / 0.64);
-    border-color: hsl(var(--border) / 0.76);
-    box-shadow: 0 12px 24px -22px hsl(192 22% 18% / 0.42);
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.86), hsl(40 42% 96% / 0.94));
+    border-color: hsl(var(--border) / 0.82);
+    box-shadow: 0 10px 18px -18px hsl(192 22% 18% / 0.14);
   }
 
   .input-surface {
-    background: linear-gradient(180deg, hsl(0 0% 100% / 0.74), hsl(42 52% 97% / 0.88));
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.84), hsl(42 52% 97% / 0.94));
     border: 1px solid hsl(var(--border) / 0.88);
     box-shadow:
       inset 0 1px 0 hsl(0 0% 100% / 0.78),
-      0 12px 30px -26px hsl(188 18% 22% / 0.25);
+      0 8px 18px -20px hsl(188 18% 22% / 0.1);
+  }
+
+  .stack-card {
+    @apply rounded-[1.15rem] border px-4 py-3;
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.76), hsl(42 46% 96% / 0.9));
+    border-color: hsl(var(--border) / 0.8);
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.74),
+      0 12px 24px -24px hsl(192 22% 18% / 0.14);
+  }
+
+  .divider-dash {
+    height: 1px;
+    background: linear-gradient(90deg, hsl(var(--border) / 0.92), transparent 82%);
+  }
+
+  .primary-quiet {
+    @apply rounded-full border px-3 py-1.5 text-xs font-medium;
+    background: linear-gradient(180deg, hsl(var(--primary) / 0.12), hsl(var(--primary) / 0.08));
+    border-color: hsl(var(--primary) / 0.16);
+    color: hsl(var(--primary));
+  }
+
+  .subtle-button {
+    @apply rounded-full border px-3 py-1.5 text-xs font-medium text-foreground;
+    background: hsl(0 0% 100% / 0.72);
+    border-color: hsl(var(--border) / 0.88);
+  }
+
+  .icon-button-soft {
+    @apply flex h-10 w-10 items-center justify-center rounded-full border text-muted-foreground;
+    background: hsl(0 0% 100% / 0.74);
+    border-color: hsl(var(--border) / 0.82);
+    box-shadow: 0 10px 18px -18px hsl(192 22% 18% / 0.16);
+  }
+
+  .text-button {
+    @apply text-sm font-medium text-muted-foreground transition-colors hover:text-foreground;
   }
 
   :is(.rounded-lg.border.bg-card, .rounded-xl.border.bg-card, .rounded-2xl.border.bg-card) {
@@ -309,9 +390,9 @@
     border-color: hsl(var(--border) / 0.78);
     background: linear-gradient(180deg, hsl(0 0% 100% / 0.72), hsl(42 48% 96% / 0.9));
     box-shadow:
-      0 24px 60px -42px hsl(192 22% 18% / 0.36),
-      0 14px 36px -30px hsl(28 74% 46% / 0.24);
-    backdrop-filter: blur(18px);
+      0 14px 30px -28px hsl(192 22% 18% / 0.22),
+      0 10px 24px -24px hsl(28 74% 46% / 0.12);
+    backdrop-filter: blur(12px);
   }
 
   :is(.rounded-lg.border.bg-card, .rounded-xl.border.bg-card, .rounded-2xl.border.bg-card)::before {

@@ -20,11 +20,9 @@ function RouteFallback() {
     <div className="min-h-screen pb-28">
       <div className="page-shell">
         <div className="hero-panel p-5">
-          <p className="soft-kicker">Loading</p>
-          <p className="mt-3 text-lg font-semibold">页面正在加载</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            稍等一下，OwnMyDay 正在把当前页面铺开给你。
-          </p>
+          <p className="soft-kicker">OWN MY DAY</p>
+          <p className="mt-3 text-lg font-semibold text-foreground">页面正在展开</p>
+          <p className="mt-2 text-sm text-muted-foreground">再等一下，就好了。</p>
         </div>
       </div>
     </div>

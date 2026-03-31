@@ -38,12 +38,15 @@ export interface IdeaItem {
 export interface DailyReview {
   sacredDone: boolean;
   failReason: string;
-  drifted: "no" | "slight" | "major";
-  energyAccurate: "accurate" | "ok" | "wrong";
   bestProgress: string;
+  stuckPoint: string;
+  mood: string;
+  loopingThought: string;
   tomorrowRole: string;
   tomorrowSacred: string;
   completed: boolean;
+  drifted: "no" | "slight" | "major";
+  energyAccurate: "accurate" | "ok" | "wrong";
 }
 
 export type DraftStatus = "draft" | "pending";
@@ -152,19 +155,49 @@ export interface OwnMyDayActionResult {
 // ─── Constants ───────────────────────────────────────
 
 export const ENERGY_CONFIG: Record<EnergyState, { label: string; desc: string; icon: string }> = {
-  high: { label: "高能推进", desc: "打硬仗、做决策、写关键内容", icon: "⚡" },
-  medium: { label: "中能执行", desc: "推进、沟通、修改、跟进", icon: "🔋" },
-  low: { label: "低能收尾", desc: "清零碎、收尾、整理", icon: "🌿" },
-  chaos: { label: "混乱保底", desc: "只保 1 件最重要的事", icon: "🛡️" },
+  high: { label: "高能", desc: "适合猛推最重要的事", icon: "⚡" },
+  medium: { label: "中能", desc: "适合稳定推进", icon: "🌤️" },
+  low: { label: "低能", desc: "适合收口和清理", icon: "🌙" },
+  chaos: { label: "混乱", desc: "先保住最重要的一件", icon: "🌀" },
 };
 
 export const DEFAULT_ROLES: Role[] = [
-  { id: "founder", name: "创始人 / 操盘手", desc: "战略方向、关键决策、资源调度", examples: ["制定季度战略", "关键合作谈判", "融资路演"] },
-  { id: "growth", name: "增长负责人", desc: "获客、转化、留存、增长实验", examples: ["分析转化漏斗", "策划增长活动", "优化投放策略"] },
-  { id: "product", name: "产品设计者", desc: "需求洞察、产品规划、体验优化", examples: ["用户调研", "功能原型设计", "竞品分析"] },
-  { id: "content", name: "内容输出者", desc: "内容创作、品牌建设、公众表达", examples: ["写公众号文章", "录制视频", "准备演讲"] },
-  { id: "manager", name: "团队管理者", desc: "带人、协调、文化建设", examples: ["1on1 面谈", "团队周会", "绩效反馈"] },
-  { id: "personal", name: "家庭与个人", desc: "健康、家庭、自我充电", examples: ["运动健身", "陪伴家人", "学习充电"] },
+  {
+    id: "founder",
+    name: "操盘",
+    desc: "方向、决策、关键推进。",
+    examples: ["定方向", "做决策", "谈关键合作"],
+  },
+  {
+    id: "growth",
+    name: "增长",
+    desc: "获客、转化、增长动作。",
+    examples: ["改转化", "做投放", "盯增长"],
+  },
+  {
+    id: "product",
+    name: "产品",
+    desc: "需求、体验、产品推进。",
+    examples: ["梳需求", "改流程", "做方案"],
+  },
+  {
+    id: "content",
+    name: "内容",
+    desc: "写作、表达、对外输出。",
+    examples: ["写文章", "录内容", "做表达"],
+  },
+  {
+    id: "manager",
+    name: "团队",
+    desc: "带人、协调、组织推进。",
+    examples: ["带人", "开会", "协调资源"],
+  },
+  {
+    id: "personal",
+    name: "生活",
+    desc: "身体、家庭、个人状态。",
+    examples: ["运动", "陪家人", "休整充电"],
+  },
 ];
 
 const DAILY_PREFIX = "omd_daily_";
@@ -244,6 +277,23 @@ function createDefaultDaily(date: string): DailyEntry {
     supportTasks: [],
     quickNotes: [],
     ideaItems: [],
+    review: createDefaultReview(),
+  };
+}
+
+function createDefaultReview(): DailyReview {
+  return {
+    sacredDone: false,
+    failReason: "",
+    bestProgress: "",
+    stuckPoint: "",
+    mood: "",
+    loopingThought: "",
+    tomorrowRole: "",
+    tomorrowSacred: "",
+    completed: false,
+    drifted: "no",
+    energyAccurate: "accurate",
   };
 }
 
@@ -303,7 +353,40 @@ function normalizeDailyEntry(entry: DailyEntry | null | undefined, date: string)
     supportTasks: Array.isArray(entry.supportTasks) ? entry.supportTasks : base.supportTasks,
     quickNotes: Array.isArray(entry.quickNotes) ? entry.quickNotes : base.quickNotes,
     ideaItems,
+    review: normalizeDailyReview(entry.review),
     brainDump: undefined,
+  };
+}
+
+function normalizeDailyReview(review: DailyReview | null | undefined): DailyReview {
+  const base = createDefaultReview();
+  if (!review) return base;
+
+  return {
+    ...base,
+    ...review,
+    sacredDone: typeof review.sacredDone === "boolean" ? review.sacredDone : base.sacredDone,
+    failReason: typeof review.failReason === "string" ? review.failReason : base.failReason,
+    bestProgress: typeof review.bestProgress === "string" ? review.bestProgress : base.bestProgress,
+    stuckPoint: typeof review.stuckPoint === "string" ? review.stuckPoint : base.stuckPoint,
+    mood: typeof review.mood === "string" ? review.mood : base.mood,
+    loopingThought:
+      typeof review.loopingThought === "string" ? review.loopingThought : base.loopingThought,
+    tomorrowRole:
+      typeof review.tomorrowRole === "string" ? review.tomorrowRole : base.tomorrowRole,
+    tomorrowSacred:
+      typeof review.tomorrowSacred === "string" ? review.tomorrowSacred : base.tomorrowSacred,
+    completed: typeof review.completed === "boolean" ? review.completed : base.completed,
+    drifted:
+      review.drifted === "no" || review.drifted === "slight" || review.drifted === "major"
+        ? review.drifted
+        : base.drifted,
+    energyAccurate:
+      review.energyAccurate === "accurate" ||
+      review.energyAccurate === "ok" ||
+      review.energyAccurate === "wrong"
+        ? review.energyAccurate
+        : base.energyAccurate,
   };
 }
 
