@@ -1,20 +1,20 @@
 {
   "name": "ownmyday",
   "short_name": "ownmyday",
-  "description": "个人主线管理系统 — 每天打在最重要的主线上",
-  "start_url": "/",
+  "description": "Personal mainline operating system. Focus on the most important work today.",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#faf9f6",
   "theme_color": "#d97706",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/icon-192.png",
+      "src": "./icon-192.png",
       "sizes": "512x512",
       "type": "image/png"
     }

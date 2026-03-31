@@ -8,7 +8,7 @@ export default function MonthlyFocus() {
   const [monthly, setMonthly] = useMonthlyFocus();
   const [driftInput, setDriftInput] = useState("");
 
-  const monthLabel = format(new Date(), "yyyy年M月", { locale: zhCN });
+  const monthLabel = format(new Date(), "yyyy骞碝鏈?, { locale: zhCN });
   const update = (patch: Partial<typeof monthly>) => setMonthly((p) => ({ ...p, ...patch }));
 
   const updateAxis = (idx: number, val: string) => {
@@ -28,16 +28,16 @@ export default function MonthlyFocus() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <div className="mx-auto max-w-lg px-4 pt-6">
+    <div className="min-h-screen pb-28">
+      <div className="page-shell">
         <div className="mb-6 fade-in">
-          <h1 className="text-2xl font-bold tracking-tight">本月主线</h1>
+          <h1 className="text-2xl font-bold tracking-tight">鏈湀涓荤嚎</h1>
           <p className="text-sm text-muted-foreground">{monthLabel}</p>
         </div>
 
         {/* 3 Axes */}
         <section className="mb-6 fade-in">
-          <h2 className="text-sm font-medium text-muted-foreground mb-2">🎯 三大推进轴</h2>
+          <h2 className="text-sm font-medium text-muted-foreground mb-2">馃幆 涓夊ぇ鎺ㄨ繘杞?/h2>
           <div className="space-y-2">
             {monthly.axes.map((axis, i) => (
               <div key={i} className="flex items-center gap-2 rounded-xl border bg-card p-3">
@@ -48,7 +48,7 @@ export default function MonthlyFocus() {
                   type="text"
                   value={axis}
                   onChange={(e) => updateAxis(i, e.target.value)}
-                  placeholder={`推进轴 ${i + 1}`}
+                  placeholder={`鎺ㄨ繘杞?${i + 1}`}
                   className="flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground/30"
                 />
               </div>
@@ -58,12 +58,12 @@ export default function MonthlyFocus() {
 
         {/* Resource Focus */}
         <section className="mb-6 fade-in">
-          <h2 className="text-sm font-medium text-muted-foreground mb-2">💰 资源焦点</h2>
+          <h2 className="text-sm font-medium text-muted-foreground mb-2">馃挵 璧勬簮鐒︾偣</h2>
           <div className="rounded-xl border bg-card p-4 space-y-3">
             {([
-              { key: "money" as const, label: "💵 主要投钱", placeholder: "这个月钱花在哪？" },
-              { key: "time" as const, label: "⏰ 主要投时间", placeholder: "这个月时间花在哪？" },
-              { key: "attention" as const, label: "🧠 主要投注意力", placeholder: "这个月注意力放在哪？" },
+              { key: "money" as const, label: "馃挼 涓昏鎶曢挶", placeholder: "杩欎釜鏈堥挶鑺卞湪鍝紵" },
+              { key: "time" as const, label: "鈴?涓昏鎶曟椂闂?, placeholder: "杩欎釜鏈堟椂闂磋姳鍦ㄥ摢锛? },
+              { key: "attention" as const, label: "馃 涓昏鎶曟敞鎰忓姏", placeholder: "杩欎釜鏈堟敞鎰忓姏鏀惧湪鍝紵" },
             ]).map((field) => (
               <div key={field.key} className="space-y-1">
                 <label className="text-xs text-muted-foreground">{field.label}</label>
@@ -85,12 +85,12 @@ export default function MonthlyFocus() {
 
         {/* Risk Drift */}
         <section className="mb-6 fade-in">
-          <h2 className="text-sm font-medium text-muted-foreground mb-2">⚠️ 危险偏移</h2>
-          <p className="text-xs text-muted-foreground mb-2">这个月最容易掉进什么坑？</p>
+          <h2 className="text-sm font-medium text-muted-foreground mb-2">鈿狅笍 鍗遍櫓鍋忕Щ</h2>
+          <p className="text-xs text-muted-foreground mb-2">杩欎釜鏈堟渶瀹规槗鎺夎繘浠€涔堝潙锛?/p>
           <div className="space-y-1.5">
             {monthly.riskDrift.map((item, i) => (
               <div key={i} className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2">
-                <span className="text-xs text-destructive">⚠</span>
+                <span className="text-xs text-destructive">鈿?/span>
                 <span className="flex-1 text-sm">{item}</span>
                 <button onClick={() => removeDrift(i)} className="text-muted-foreground/40 hover:text-destructive">
                   <X className="h-3.5 w-3.5" />
@@ -104,7 +104,7 @@ export default function MonthlyFocus() {
               value={driftInput}
               onChange={(e) => setDriftInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addDrift()}
-              placeholder="例如：过度发散、情绪性接活..."
+              placeholder="渚嬪锛氳繃搴﹀彂鏁ｃ€佹儏缁€ф帴娲?.."
               className="flex-1 rounded-lg border bg-card px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/30 focus:ring-1 focus:ring-primary/30"
             />
             <button onClick={addDrift} className="rounded-lg bg-primary p-2 text-primary-foreground">
