@@ -17,22 +17,22 @@ import {
 } from "@/lib/store";
 
 const FAIL_REASONS = [
-  { value: "too_big", label: "鐩爣瀹氬緱澶ぇ" },
-  { value: "interrupted", label: "琚獊鍙戜簨浠舵墦鏂? },
-  { value: "avoided", label: "鑷繁鍦ㄥ洖閬? },
-  { value: "dependency", label: "渚濊禆鍒汉鏈畬鎴? },
+  { value: "too_big", label: "目标定得太大" },
+  { value: "interrupted", label: "被突发事件打断" },
+  { value: "avoided", label: "自己在回避" },
+  { value: "dependency", label: "依赖别人未完成" },
 ];
 
 const DRIFT_OPTIONS = [
-  { value: "no" as const, label: "娌℃湁" },
-  { value: "slight" as const, label: "鏈変竴鐐? },
-  { value: "major" as const, label: "鏄庢樉鍋忎簡" },
+  { value: "no" as const, label: "没有" },
+  { value: "slight" as const, label: "有一点" },
+  { value: "major" as const, label: "明显偏了" },
 ];
 
 const ENERGY_ACCURACY = [
-  { value: "accurate" as const, label: "寰堝噯" },
-  { value: "ok" as const, label: "涓€鑸? },
-  { value: "wrong" as const, label: "涓嶅噯" },
+  { value: "accurate" as const, label: "很准" },
+  { value: "ok" as const, label: "一般" },
+  { value: "wrong" as const, label: "不准" },
 ];
 
 export default function Review() {
@@ -40,7 +40,7 @@ export default function Review() {
   const [drafts, setDrafts] = useDraftBox();
   const [roles] = useRoles();
   const activeRoles = getActiveRoles(roles);
-  const dateStr = format(new Date(), "M鏈坉鏃?EEEE", { locale: zhCN });
+  const dateStr = format(new Date(), "M月d日 EEEE", { locale: zhCN });
 
   const review: DailyReview = entry.review || {
     sacredDone: entry.sacredTask.done,
@@ -63,7 +63,7 @@ export default function Review() {
           {
             id: "sacred",
             title: entry.sacredTask.title,
-            notes: review.failReason ? `鏈畬鎴愬師鍥狅細${review.failReason}` : "",
+            notes: review.failReason ? `未完成原因：${review.failReason}` : "",
             relatedRoleId: entry.sacredTask.role || entry.mainRole || undefined,
             source: `review:${entry.date}:sacred`,
           },
@@ -74,7 +74,7 @@ export default function Review() {
       .map((item) => ({
         id: item.id,
         title: item.title,
-        notes: item.status === "doing" ? "浠婂ぉ宸插紑濮嬶紝灏氭湭瀹屾垚" : "",
+        notes: item.status === "doing" ? "今天已开始，尚未完成" : "",
         relatedRoleId: item.role || entry.mainRole || undefined,
         source: `review:${entry.date}:kr:${item.id}`,
       })),
@@ -109,8 +109,8 @@ export default function Review() {
       ...prev,
     ]);
     toast({
-      title: status === "pending" ? "宸茶浆鍏ュ緟澶勭悊" : "宸茶浆鍏ヨ崏绋?,
-      description: "杩欐潯鏈畬鎴愰」宸茬粡琚畨鍏ㄦ敹鍙ｃ€?,
+      title: status === "pending" ? "已转入待处理" : "已转入草稿",
+      description: "这条未完成项已经被安全收口。",
     });
   };
 
@@ -145,8 +145,8 @@ export default function Review() {
       <div className="page-shell">
         <div className="mb-6 flex items-start justify-between gap-3 fade-in">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">鏅氶棿澶嶇洏</h1>
-            <p className="text-sm text-muted-foreground">{dateStr} 路 鍏堟敹鍙ｏ紝鍐嶄笅鐝€?/p>
+            <h1 className="text-2xl font-bold tracking-tight">晚间复盘</h1>
+            <p className="text-sm text-muted-foreground">{dateStr} · 先收口，再下班。</p>
             <div className="mt-2">
               <PilotBadge />
             </div>
@@ -155,18 +155,18 @@ export default function Review() {
         </div>
 
         <section className="mb-6 fade-in">
-          <h2 className="mb-2 text-sm font-medium text-muted-foreground">绁炲湥浠诲姟瀹屾垚浜嗗悧锛?/h2>
+          <h2 className="mb-2 text-sm font-medium text-muted-foreground">神圣任务完成了吗？</h2>
           {entry.sacredTask.title ? (
             <div className="mb-3 rounded-xl border-2 border-sacred-border bg-sacred-bg p-4">
               <p className="text-sm font-semibold">{entry.sacredTask.title}</p>
             </div>
           ) : (
-            <p className="mb-3 text-sm text-muted-foreground">浠婂ぉ娌℃湁璁惧畾绁炲湥浠诲姟</p>
+            <p className="mb-3 text-sm text-muted-foreground">今天没有设定神圣任务</p>
           )}
           <RadioGroup
             options={[
-              { value: "true", label: "宸插畬鎴? },
-              { value: "false", label: "娌″畬鎴? },
+              { value: "true", label: "已完成" },
+              { value: "false", label: "没完成" },
             ]}
             value={String(review.sacredDone)}
             onChange={(value) => updateReview({ sacredDone: value === "true" })}
@@ -175,7 +175,7 @@ export default function Review() {
 
         {!review.sacredDone && (
           <section className="mb-6 fade-in">
-            <h2 className="mb-2 text-sm font-medium text-muted-foreground">鏈畬鎴愬師鍥?/h2>
+            <h2 className="mb-2 text-sm font-medium text-muted-foreground">未完成原因</h2>
             <RadioGroup
               options={FAIL_REASONS}
               value={review.failReason}
@@ -185,7 +185,7 @@ export default function Review() {
         )}
 
         <section className="mb-6 fade-in">
-          <h2 className="mb-2 text-sm font-medium text-muted-foreground">浠婂ぉ鏈夋病鏈夋帀鍑轰富绾匡紵</h2>
+          <h2 className="mb-2 text-sm font-medium text-muted-foreground">今天有没有掉出主线？</h2>
           <RadioGroup
             options={DRIFT_OPTIONS}
             value={review.drifted}
@@ -194,7 +194,7 @@ export default function Review() {
         </section>
 
         <section className="mb-6 fade-in">
-          <h2 className="mb-2 text-sm font-medium text-muted-foreground">浠婂ぉ鑳介噺鍒ゆ柇鍑嗕笉鍑嗭紵</h2>
+          <h2 className="mb-2 text-sm font-medium text-muted-foreground">今天能量判断准不准？</h2>
           <RadioGroup
             options={ENERGY_ACCURACY}
             value={review.energyAccurate}
@@ -205,21 +205,21 @@ export default function Review() {
         </section>
 
         <section className="mb-6 fade-in">
-          <h2 className="mb-2 text-sm font-medium text-muted-foreground">浠婂ぉ鏈€鍊煎緱璁板綍鐨勪竴浠舵帹杩?/h2>
+          <h2 className="mb-2 text-sm font-medium text-muted-foreground">今天最值得记录的一件推进</h2>
           <input
             type="text"
             value={review.bestProgress}
             onChange={(e) => updateReview({ bestProgress: e.target.value })}
-            placeholder="涓€鍙ヨ瘽璁板綍..."
+            placeholder="一句话记录..."
             className="w-full rounded-xl border bg-card p-3 text-sm outline-none placeholder:text-muted-foreground/30 focus:ring-1 focus:ring-primary/30"
           />
         </section>
 
         <section className="mb-6 fade-in">
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground">鏄庡ぉ棰勮</h2>
+          <h2 className="mb-3 text-sm font-medium text-muted-foreground">明天预设</h2>
           <div className="space-y-3 rounded-xl border bg-card p-4">
             <div>
-              <label className="text-xs text-muted-foreground">鏄庡ぉ鐨勪富瑙掕壊</label>
+              <label className="text-xs text-muted-foreground">明天的主角色</label>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {activeRoles.map((role) => (
                   <button
@@ -238,12 +238,12 @@ export default function Review() {
             </div>
 
             <div>
-              <label className="text-xs text-muted-foreground">鏄庡ぉ鐨勭鍦ｄ换鍔?/label>
+              <label className="text-xs text-muted-foreground">明天的神圣任务</label>
               <input
                 type="text"
                 value={review.tomorrowSacred}
                 onChange={(e) => updateReview({ tomorrowSacred: e.target.value })}
-                placeholder="鏄庡ぉ鏈€閲嶈鐨勪竴浠朵簨..."
+                placeholder="明天最重要的一件事..."
                 className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/30 focus:ring-1 focus:ring-primary/30"
               />
             </div>
@@ -252,7 +252,7 @@ export default function Review() {
 
         {unresolvedItems.length > 0 ? (
           <section className="mb-6 fade-in">
-            <h2 className="mb-2 text-sm font-medium text-muted-foreground">浠婃棩鏈畬鎴愭敹鍙?/h2>
+            <h2 className="mb-2 text-sm font-medium text-muted-foreground">今日未完成收口</h2>
             <div className="space-y-2">
               {unresolvedItems.map((item) => {
                 const movedToPending = drafts.some(
@@ -274,14 +274,14 @@ export default function Review() {
                         disabled={movedToPending}
                         className="rounded-lg border px-3 py-2 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {movedToPending ? "宸茶浆鍏ュ緟澶勭悊" : "杞叆寰呭鐞?}
+                        {movedToPending ? "已转入待处理" : "转入待处理"}
                       </button>
                       <button
                         onClick={() => moveToDraftBox(item, "draft")}
                         disabled={movedToDraft}
                         className="rounded-lg border px-3 py-2 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {movedToDraft ? "宸茶浆鍏ヨ崏绋? : "杞叆鑽夌"}
+                        {movedToDraft ? "已转入草稿" : "转入草稿"}
                       </button>
                     </div>
                   </div>
@@ -292,8 +292,8 @@ export default function Review() {
         ) : (
           <section className="mb-6 fade-in">
             <div className="rounded-2xl border border-dashed bg-card/60 p-4 text-center">
-              <p className="text-sm font-medium">浠婂ぉ娌℃湁闇€瑕佹敹鍙ｇ殑灏惧反銆?/p>
-              <p className="mt-1 text-sm text-muted-foreground">鐣欎竴鍙ユ渶浣宠繘灞曪紝鍐嶈涓€涓嬫槑澶╁氨澶熶簡銆?/p>
+              <p className="text-sm font-medium">今天没有需要收口的尾巴。</p>
+              <p className="mt-1 text-sm text-muted-foreground">留一句最佳进展，再设一下明天就够了。</p>
             </div>
           </section>
         )}
@@ -309,9 +309,10 @@ export default function Review() {
           {review.completed ? (
             <span className="flex items-center justify-center gap-2">
               <Check className="h-4 w-4" />
-              澶嶇洏宸插畬鎴?            </span>
+              复盘已完成
+            </span>
           ) : (
-            "瀹屾垚浠婃棩澶嶇洏"
+            "完成今日复盘"
           )}
         </button>
       </div>

@@ -40,7 +40,7 @@ export default function Settings() {
   const showMessage = (next: MessageState) => {
     setMessage(next);
     toast({
-      title: next.tone === "error" ? "鎿嶄綔鏈畬鎴? : "宸叉洿鏂?,
+      title: next.tone === "error" ? "操作未完成" : "已更新",
       description: next.text,
       variant: next.tone === "error" ? "destructive" : "default",
     });
@@ -64,7 +64,7 @@ export default function Settings() {
       .replace(/[:T]/g, "-")}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    showMessage({ tone: "success", text: "宸插鍑哄叏閮ㄦ暟鎹€? });
+    showMessage({ tone: "success", text: "已导出全部数据。" });
   };
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +81,7 @@ export default function Settings() {
         setConfirmReset(false);
       }
     } catch {
-      showMessage({ tone: "error", text: "瀵煎叆澶辫触锛氭枃浠朵笉鏄彲璇嗗埆鐨?JSON銆? });
+      showMessage({ tone: "error", text: "导入失败：文件不是可识别的 JSON。" });
     }
   };
 
@@ -90,7 +90,7 @@ export default function Settings() {
       setConfirmReset(true);
       setMessage({
         tone: "info",
-        text: "鍐嶇偣涓€娆♀€滅‘璁ゆ竻绌衡€濓紝灏变細鍒犻櫎杩欏彴璁惧涓婄殑鏈湴鏁版嵁銆?,
+        text: "再点一次“确认清空”，就会删除这台设备上的本地数据。",
       });
       return;
     }
@@ -110,8 +110,8 @@ export default function Settings() {
     setRoles((prev) => [...prev, createRole(name)]);
     setNewRoleName("");
     toast({
-      title: "瑙掕壊宸叉柊澧?,
-      description: `鈥?{name}鈥?宸插姞鍏ュ叏绔欒鑹插垪琛ㄣ€俙,
+      title: "角色已新增",
+      description: `“${name}” 已加入全站角色列表。`,
     });
   };
 
@@ -135,7 +135,7 @@ export default function Settings() {
         const trimmed = role.name.trim();
         return {
           ...role,
-          name: trimmed || "鏈懡鍚嶈鑹?,
+          name: trimmed || "未命名角色",
         };
       })
     );
@@ -146,7 +146,7 @@ export default function Settings() {
     if (!currentRole) return;
 
     if (currentRole.active !== false && activeRoles.length <= 1) {
-      showMessage({ tone: "info", text: "鑷冲皯淇濈暀涓€涓惎鐢ㄤ腑鐨勮鑹层€? });
+      showMessage({ tone: "info", text: "至少保留一个启用中的角色。" });
       return;
     }
 
@@ -162,11 +162,11 @@ export default function Settings() {
     );
 
     toast({
-      title: currentRole.active === false ? "瑙掕壊宸插惎鐢? : "瑙掕壊宸插仠鐢?,
+      title: currentRole.active === false ? "角色已启用" : "角色已停用",
       description:
         currentRole.active === false
-          ? `鈥?{currentRole.name}鈥?浼氶噸鏂板嚭鐜板湪鍚勯〉闈㈤€夋嫨鍣ㄤ腑銆俙
-          : `鈥?{currentRole.name}鈥?宸蹭粠鏂伴€夋嫨涓殣钘忥紝鍘嗗彶鏁版嵁涓嶅彈褰卞搷銆俙,
+          ? `“${currentRole.name}” 会重新出现在各页面选择器中。`
+          : `“${currentRole.name}” 已从新选择中隐藏，历史数据不受影响。`,
     });
   };
 
@@ -176,9 +176,10 @@ export default function Settings() {
         <div className="mb-6 fade-in">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">鏁版嵁涓庣郴缁熻缃?/h1>
+              <h1 className="text-2xl font-bold tracking-tight">数据与系统设置</h1>
               <p className="text-sm text-muted-foreground">
-                鍏堜繚浣忔暟鎹紝鍐嶆妸璇曡繍琛岀増璋冨埌鏇撮『鎵嬨€?              </p>
+                先保住数据，再把试运行版调到更顺手。
+              </p>
             </div>
             <PilotBadge />
           </div>
@@ -188,18 +189,18 @@ export default function Settings() {
           <div className="rounded-2xl border bg-card p-4">
             <div className="flex items-center gap-2">
               <Settings2 className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-medium">褰撳墠绯荤粺鐘舵€?/h2>
+              <h2 className="text-sm font-medium">当前系统状态</h2>
             </div>
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
               <span className="rounded-full bg-primary/10 px-3 py-1 text-primary">Pilot v0.3</span>
               <span className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">
-                鍚敤瑙掕壊 {activeRoles.length}
+                启用角色 {activeRoles.length}
               </span>
               <span className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">
-                闅愯棌瑙掕壊 {hiddenRoleCount}
+                隐藏角色 {hiddenRoleCount}
               </span>
               <span className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">
-                鏈湴浼樺厛
+                本地优先
               </span>
             </div>
           </div>
@@ -209,31 +210,31 @@ export default function Settings() {
           <div className="rounded-2xl border bg-card p-4">
             <div className="flex items-center gap-2">
               <Database className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-medium">褰撳墠鏁版嵁姒傝</h2>
+              <h2 className="text-sm font-medium">当前数据概览</h2>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
               <div className="rounded-xl bg-secondary/60 px-3 py-2">
-                <p className="text-muted-foreground">鏃ヨ褰?/p>
+                <p className="text-muted-foreground">日记录</p>
                 <p className="mt-1 text-base font-semibold text-foreground">{summary.dailyCount}</p>
               </div>
               <div className="rounded-xl bg-secondary/60 px-3 py-2">
-                <p className="text-muted-foreground">鍛ㄤ富绾?/p>
+                <p className="text-muted-foreground">周主线</p>
                 <p className="mt-1 text-base font-semibold text-foreground">{summary.weeklyCount}</p>
               </div>
               <div className="rounded-xl bg-secondary/60 px-3 py-2">
-                <p className="text-muted-foreground">鏈堜富绾?/p>
+                <p className="text-muted-foreground">月主线</p>
                 <p className="mt-1 text-base font-semibold text-foreground">{summary.monthlyCount}</p>
               </div>
               <div className="rounded-xl bg-secondary/60 px-3 py-2">
-                <p className="text-muted-foreground">瑙掕壊鎬绘暟</p>
+                <p className="text-muted-foreground">角色总数</p>
                 <p className="mt-1 text-base font-semibold text-foreground">{summary.roleCount}</p>
               </div>
               <div className="rounded-xl bg-secondary/60 px-3 py-2">
-                <p className="text-muted-foreground">鑽夌绠?/p>
+                <p className="text-muted-foreground">草稿箱</p>
                 <p className="mt-1 text-base font-semibold text-foreground">{summary.draftCount}</p>
               </div>
               <div className="rounded-xl bg-secondary/60 px-3 py-2">
-                <p className="text-muted-foreground">鏈潵瀹夋帓</p>
+                <p className="text-muted-foreground">未来安排</p>
                 <p className="mt-1 text-base font-semibold text-foreground">{summary.futureCount}</p>
               </div>
             </div>
@@ -260,10 +261,11 @@ export default function Settings() {
           <div className="rounded-2xl border bg-card p-4">
             <div className="flex items-center gap-2">
               <EyeOff className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-medium">杞婚噺瑙掕壊绠＄悊</h2>
+              <h2 className="text-sm font-medium">轻量角色管理</h2>
             </div>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              鍙洿鎺ユ敼鍚嶇О銆佸惎鍋滆鑹层€傚仠鐢ㄥ悗浼氫粠鏂伴€夋嫨閲岄殣钘忥紝浣嗗巻鍙茶褰曚粛淇濈暀銆?            </p>
+              可直接改名称、启停角色。停用后会从新选择里隐藏，但历史记录仍保留。
+            </p>
 
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <input
@@ -271,7 +273,7 @@ export default function Settings() {
                 value={newRoleName}
                 onChange={(e) => setNewRoleName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addRole()}
-                placeholder="鏂板涓€涓鑹插悕绉?
+                placeholder="新增一个角色名称"
                 className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/30 focus:ring-1 focus:ring-primary/30"
               />
               <button
@@ -279,7 +281,7 @@ export default function Settings() {
                 className="inline-flex items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground"
               >
                 <Plus className="h-4 w-4" />
-                鏂板瑙掕壊
+                新增角色
               </button>
             </div>
 
@@ -307,13 +309,13 @@ export default function Settings() {
                           : "bg-secondary text-secondary-foreground"
                       }`}
                     >
-                      {role.active === false ? "鍚敤" : "鍋滅敤"}
+                      {role.active === false ? "启用" : "停用"}
                     </button>
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
                     <span>ID: {role.id}</span>
-                    <span>路</span>
-                    <span>{role.active === false ? "宸查殣钘? : "鍚敤涓?}</span>
+                    <span>·</span>
+                    <span>{role.active === false ? "已隐藏" : "启用中"}</span>
                   </div>
                 </div>
               ))}
@@ -325,25 +327,27 @@ export default function Settings() {
           <div className="rounded-2xl border bg-card p-4">
             <div className="flex items-center gap-2">
               <Download className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-medium">瀵煎嚭鍏ㄩ儴鏁版嵁</h2>
+              <h2 className="text-sm font-medium">导出全部数据</h2>
             </div>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              浼氬鍑?daily銆亀eekly銆乵onthly銆乺oles銆乨rafts銆乫uture銆?            </p>
+              会导出 daily、weekly、monthly、roles、drafts、future。
+            </p>
             <button
               onClick={handleExport}
               className="mt-3 w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground"
             >
-              瀵煎嚭 JSON 澶囦唤
+              导出 JSON 备份
             </button>
           </div>
 
           <div className="rounded-2xl border bg-card p-4">
             <div className="flex items-center gap-2">
               <Upload className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-medium">瀵煎叆鏁版嵁</h2>
+              <h2 className="text-sm font-medium">导入数据</h2>
             </div>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              鍙敮鎸佸鍏?ownmyday 瀵煎嚭鐨?JSON銆傚鍏ユ垚鍔熷悗褰撳墠椤甸潰浼氱洿鎺ュ悓姝ワ紝涓嶅啀鏁撮〉鍒锋柊銆?            </p>
+              只支持导入 ownmyday 导出的 JSON。导入成功后当前页面会直接同步，不再整页刷新。
+            </p>
             <input
               ref={fileInputRef}
               type="file"
@@ -355,7 +359,7 @@ export default function Settings() {
               onClick={triggerImport}
               className="mt-3 w-full rounded-lg border px-4 py-3 text-sm font-medium text-foreground"
             >
-              閫夋嫨 JSON 鏂囦欢
+              选择 JSON 文件
             </button>
           </div>
         </section>
@@ -364,16 +368,17 @@ export default function Settings() {
           <div className="rounded-2xl border border-destructive/20 bg-card p-4">
             <div className="flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-destructive" />
-              <h2 className="text-sm font-medium text-foreground">娓呯┖鏈湴鏁版嵁</h2>
+              <h2 className="text-sm font-medium text-foreground">清空本地数据</h2>
             </div>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              杩欐槸鍗遍櫓鎿嶄綔銆傚缓璁厛瀵煎嚭涓€浠藉浠斤紝鍐嶆竻绌恒€?            </p>
+              这是危险操作。建议先导出一份备份，再清空。
+            </p>
             <div className="mt-3 grid gap-2">
               <button
                 onClick={handleReset}
                 className="w-full rounded-lg bg-destructive px-4 py-3 text-sm font-medium text-destructive-foreground"
               >
-                {confirmReset ? "纭娓呯┖鍏ㄩ儴鏁版嵁" : "寮€濮嬫竻绌?}
+                {confirmReset ? "确认清空全部数据" : "开始清空"}
               </button>
               {confirmReset && (
                 <button
@@ -383,7 +388,7 @@ export default function Settings() {
                   }}
                   className="w-full rounded-lg border px-4 py-3 text-sm font-medium text-foreground"
                 >
-                  鍙栨秷
+                  取消
                 </button>
               )}
             </div>
@@ -395,7 +400,8 @@ export default function Settings() {
           className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border bg-card px-4 py-3 text-sm font-medium text-foreground"
         >
           <RotateCcw className="h-4 w-4" />
-          鍥炲埌浠婃棩椤?        </button>
+          回到今日页
+        </button>
       </div>
     </div>
   );
