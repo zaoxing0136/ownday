@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { addDays, format } from "date-fns";
+import { addDays, format, startOfWeek } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { Check } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Compass } from "lucide-react";
 import HeaderActionLink from "@/components/HeaderActionLink";
 import PilotBadge from "@/components/PilotBadge";
 import { toast } from "@/hooks/use-toast";
@@ -9,11 +9,15 @@ import {
   createDraftItem,
   getActiveRoles,
   getMonthKey,
+  getSavedMonthKeys,
   getSavedDailyDates,
+  getSavedWeekStarts,
   getWeekStartKey,
   useDailyEntry,
   useDraftBox,
+  useMonthlyFocus,
   useRoles,
+  useWeeklyFocus,
   type DailyReview,
   type DraftStatus,
 } from "@/lib/store";
@@ -41,12 +45,26 @@ export default function Review() {
   const [entry, setEntry] = useDailyEntry(selectedDate);
   const [drafts, setDrafts] = useDraftBox();
   const [roles] = useRoles();
+  const selectedWeekStart = format(
+    startOfWeek(new Date(`${selectedDate}T12:00:00`), { weekStartsOn: 1 }),
+    "yyyy-MM-dd"
+  );
+  const selectedMonthKey = format(new Date(`${selectedDate}T12:00:00`), "yyyy-MM");
+  const [weekly] = useWeeklyFocus(selectedWeekStart);
+  const [monthly] = useMonthlyFocus(selectedMonthKey);
   const activeRoles = getActiveRoles(roles);
   const review = makeReview(entry.review);
   const dateLabel = format(new Date(`${selectedDate}T12:00:00`), "M月d日 EEEE", { locale: zhCN });
   const recentDates = Array.from(new Set([todayKey, selectedDate, ...getSavedDailyDates()]))
     .sort((a, b) => b.localeCompare(a))
     .slice(0, 6);
+  const recentWeeks = Array.from(new Set([selectedWeekStart, getWeekStartKey(), ...getSavedWeekStarts()]))
+    .sort((a, b) => b.localeCompare(a))
+    .slice(0, 4);
+  const recentMonths = Array.from(new Set([selectedMonthKey, getMonthKey(), ...getSavedMonthKeys()]))
+    .sort((a, b) => b.localeCompare(a))
+    .slice(0, 4);
+  const selectedRole = roles.find((role) => role.id === entry.mainRole);
 
   const updateReview = (patch: Partial<DailyReview>) => {
     setEntry((prev) => ({ ...prev, review: { ...review, ...patch } }));
@@ -125,44 +143,129 @@ export default function Review() {
             <div className="page-badges">
               <PilotBadge />
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <button onClick={() => jumpDay(-1)} className="glass-chip text-foreground">
-                前一天
-              </button>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(event) => {
-                  if (event.target.value) setSelectedDate(event.target.value);
-                }}
-                className="rounded-full border border-border/60 bg-white/80 px-3 py-2 text-xs text-foreground outline-none"
-              />
-              {selectedDate !== todayKey && (
-                <button onClick={() => setSelectedDate(todayKey)} className="glass-chip text-foreground">
-                  回今天
-                </button>
-              )}
-              <button onClick={() => jumpDay(1)} className="glass-chip text-foreground">
-                后一天
-              </button>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {recentDates.map((date) => (
-                <button
-                  key={date}
-                  onClick={() => setSelectedDate(date)}
-                  className={cn(
-                    "glass-chip text-[11px]",
-                    selectedDate === date && "border-primary/25 bg-primary/10 text-primary"
-                  )}
-                >
-                  {format(new Date(`${date}T12:00:00`), "M/d")}
-                </button>
-              ))}
-            </div>
           </div>
           <HeaderActionLink />
         </header>
+
+        <section className="section-block fade-in">
+          <div className="hero-panel overflow-hidden px-4 py-4 sm:px-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="soft-kicker">回看入口</p>
+                <h2 className="mt-2 text-xl font-semibold text-foreground">往回看这一天</h2>
+              </div>
+              <div className="glass-chip border-primary/15 bg-primary/6 text-primary">
+                <CalendarDays className="h-3.5 w-3.5" />
+                历史只放这里
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-[24px] border border-border/55 bg-white/72 p-3 shadow-[0_18px_45px_-36px_rgba(15,23,42,0.4)]">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => jumpDay(-1)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white text-foreground transition-all hover:-translate-y-0.5"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(event) => {
+                    if (event.target.value) setSelectedDate(event.target.value);
+                  }}
+                  className="min-w-0 flex-1 rounded-full border border-border/60 bg-white/90 px-4 py-2.5 text-sm text-foreground outline-none"
+                />
+                <button
+                  onClick={() => jumpDay(1)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white text-foreground transition-all hover:-translate-y-0.5"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {recentDates.map((date) => (
+                  <button
+                    key={date}
+                    onClick={() => setSelectedDate(date)}
+                    className={cn(
+                      "rounded-full px-3 py-1.5 text-[11px] font-medium transition-all",
+                      selectedDate === date
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary/80 text-secondary-foreground"
+                    )}
+                  >
+                    {format(new Date(`${date}T12:00:00`), "M/d")}
+                  </button>
+                ))}
+                {selectedDate !== todayKey && (
+                  <button
+                    onClick={() => setSelectedDate(todayKey)}
+                    className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-[11px] font-medium text-primary"
+                  >
+                    回今天
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-[1.1fr_0.9fr]">
+              <div className="rounded-[22px] border border-border/55 bg-white/68 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                      那天在打什么
+                    </p>
+                    <p className="mt-2 text-base font-semibold text-foreground">
+                      {entry.sacredTask.title.trim() || "这天还没写神圣任务"}
+                    </p>
+                  </div>
+                  {entry.energyState && (
+                    <span className="glass-chip shrink-0">{entry.energyState}</span>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selectedRole && <span className="glass-chip">{selectedRole.name}</span>}
+                  <span className="glass-chip">{entry.keyResults.filter((item) => item.title.trim()).length} 条关键成果</span>
+                  <span className="glass-chip">{entry.supportTasks.filter((item) => item.title.trim()).length} 条支撑任务</span>
+                </div>
+              </div>
+
+              <div className="rounded-[22px] border border-border/55 bg-gradient-to-br from-primary/10 via-white/72 to-amber-50/70 p-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <Compass className="h-4 w-4" />
+                  <p className="text-xs font-medium uppercase tracking-[0.18em]">那段主线</p>
+                </div>
+                <p className="mt-3 text-sm font-semibold text-foreground">
+                  {weekly.theme.trim() || "那周还没写周主题"}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {recentWeeks.map((week) => (
+                    <span key={week} className="glass-chip text-[11px]">
+                      周 {format(new Date(`${week}T12:00:00`), "M/d")}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-3 space-y-2">
+                  {monthly.axes.map((axis, index) => (
+                    <div key={`${selectedMonthKey}-${index}`} className="rounded-2xl bg-white/72 px-3 py-2 text-sm text-foreground">
+                      <span className="mr-2 text-xs text-muted-foreground">{index + 1}</span>
+                      {axis.trim() || "这条主线还没写"}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {recentMonths.map((month) => (
+                    <span key={month} className="glass-chip text-[11px]">
+                      {month}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="section-block fade-in">
           <div className="section-bar">

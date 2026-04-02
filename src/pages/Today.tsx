@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { addDays, format } from "date-fns";
+import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { ArrowUpRight, BellRing, Check, Plus, Trash2 } from "lucide-react";
 import HeaderActionLink from "@/components/HeaderActionLink";
@@ -13,7 +13,6 @@ import {
   getDueFutureReminderItems,
   getMonthKey,
   getFutureReminderLabel,
-  getSavedDailyDates,
   markFutureItemsReminded,
   useDailyEntry,
   useDraftBox,
@@ -40,9 +39,7 @@ const NEXT_STATUS: Record<TaskStatus, TaskStatus> = {
 };
 
 export default function Today() {
-  const todayKey = format(new Date(), "yyyy-MM-dd");
-  const [selectedDate, setSelectedDate] = useState(todayKey);
-  const [entry, setEntry] = useDailyEntry(selectedDate);
+  const [entry, setEntry] = useDailyEntry();
   const [, setDrafts] = useDraftBox();
   const [futureItems, setFutureItems] = useFutureSchedule();
   const [weekly] = useWeeklyFocus();
@@ -52,18 +49,8 @@ export default function Today() {
   const [ideaInput, setIdeaInput] = useState("");
   const reminderToastRef = useRef("");
 
-  const dateLabel = format(new Date(`${selectedDate}T12:00:00`), "M月d日 EEEE", { locale: zhCN });
-  const recentDates = useMemo(
-    () =>
-      Array.from(new Set([todayKey, selectedDate, ...getSavedDailyDates()]))
-        .sort((a, b) => b.localeCompare(a))
-        .slice(0, 6),
-    [selectedDate, todayKey]
-  );
-  const dueReminderItems = useMemo(
-    () => (selectedDate === todayKey ? getDueFutureReminderItems(futureItems) : []),
-    [futureItems, selectedDate, todayKey]
-  );
+  const dateLabel = format(new Date(), "M月d日 EEEE", { locale: zhCN });
+  const dueReminderItems = useMemo(() => getDueFutureReminderItems(futureItems), [futureItems]);
 
   const update = (patch: Partial<typeof entry>) => {
     setEntry((prev) => ({ ...prev, ...patch }));
@@ -84,11 +71,6 @@ export default function Today() {
       description: dueReminderItems[0]?.title || "去看一下今天该接哪件事。",
     });
   }, [dueReminderItems]);
-
-  const jumpDay = (offset: number) => {
-    const next = format(addDays(new Date(`${selectedDate}T12:00:00`), offset), "yyyy-MM-dd");
-    setSelectedDate(next);
-  };
 
   const addSupportTask = () => {
     const title = supportInput.trim();
@@ -208,41 +190,6 @@ export default function Today() {
                   本周：{weekly.theme}
                 </span>
               )}
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <button onClick={() => jumpDay(-1)} className="glass-chip text-foreground">
-                前一天
-              </button>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(event) => {
-                  if (event.target.value) setSelectedDate(event.target.value);
-                }}
-                className="rounded-full border border-border/60 bg-white/80 px-3 py-2 text-xs text-foreground outline-none"
-              />
-              {selectedDate !== todayKey && (
-                <button onClick={() => setSelectedDate(todayKey)} className="glass-chip text-foreground">
-                  回今天
-                </button>
-              )}
-              <button onClick={() => jumpDay(1)} className="glass-chip text-foreground">
-                后一天
-              </button>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {recentDates.map((date) => (
-                <button
-                  key={date}
-                  onClick={() => setSelectedDate(date)}
-                  className={cn(
-                    "glass-chip text-[11px]",
-                    selectedDate === date && "border-primary/25 bg-primary/10 text-primary"
-                  )}
-                >
-                  {format(new Date(`${date}T12:00:00`), "M/d")}
-                </button>
-              ))}
             </div>
           </div>
           <HeaderActionLink />
