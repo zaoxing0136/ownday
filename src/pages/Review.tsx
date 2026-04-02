@@ -11,7 +11,6 @@ import {
   getMonthKey,
   getSavedMonthKeys,
   getSavedDailyDates,
-  getSavedWeekStarts,
   getWeekStartKey,
   useDailyEntry,
   useDraftBox,
@@ -58,13 +57,15 @@ export default function Review() {
   const recentDates = Array.from(new Set([todayKey, selectedDate, ...getSavedDailyDates()]))
     .sort((a, b) => b.localeCompare(a))
     .slice(0, 6);
-  const recentWeeks = Array.from(new Set([selectedWeekStart, getWeekStartKey(), ...getSavedWeekStarts()]))
-    .sort((a, b) => b.localeCompare(a))
-    .slice(0, 4);
   const recentMonths = Array.from(new Set([selectedMonthKey, getMonthKey(), ...getSavedMonthKeys()]))
     .sort((a, b) => b.localeCompare(a))
     .slice(0, 4);
   const selectedRole = roles.find((role) => role.id === entry.mainRole);
+  const completedKeyResults = entry.keyResults.filter((item) => item.title.trim() && item.status === "done").length;
+  const activeSupportTasks = entry.supportTasks.filter((item) => item.title.trim()).length;
+  const completedSupportTasks = entry.supportTasks.filter((item) => item.title.trim() && item.done).length;
+  const ideaCount = entry.ideaItems.filter((item) => item.text.trim()).length;
+  const weeklyBattleNames = weekly.battles.map((battle) => battle.name.trim()).filter(Boolean);
 
   const updateReview = (patch: Partial<DailyReview>) => {
     setEntry((prev) => ({ ...prev, review: { ...review, ...patch } }));
@@ -151,16 +152,21 @@ export default function Review() {
           <div className="hero-panel overflow-hidden px-4 py-4 sm:px-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="soft-kicker">回看入口</p>
-                <h2 className="mt-2 text-xl font-semibold text-foreground">往回看这一天</h2>
+                <p className="soft-kicker">历史入口</p>
+                <h2 className="mt-2 text-[1.55rem] font-semibold leading-tight text-foreground">
+                  回看这一天
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  从这里往回看，不打扰今天和主线。
+                </p>
               </div>
               <div className="glass-chip border-primary/15 bg-primary/6 text-primary">
                 <CalendarDays className="h-3.5 w-3.5" />
-                历史只放这里
+                回看
               </div>
             </div>
 
-            <div className="mt-4 rounded-[24px] border border-border/55 bg-white/72 p-3 shadow-[0_18px_45px_-36px_rgba(15,23,42,0.4)]">
+            <div className="mt-5 rounded-[28px] border border-border/55 bg-[linear-gradient(180deg,hsl(0_0%_100%/0.82),hsl(42_48%_96%/0.96))] p-3 shadow-[0_18px_45px_-36px_rgba(15,23,42,0.4)]">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => jumpDay(-1)}
@@ -168,14 +174,26 @@ export default function Review() {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(event) => {
-                    if (event.target.value) setSelectedDate(event.target.value);
-                  }}
-                  className="min-w-0 flex-1 rounded-full border border-border/60 bg-white/90 px-4 py-2.5 text-sm text-foreground outline-none"
-                />
+                <div className="min-w-0 flex-1 rounded-[22px] border border-primary/10 bg-gradient-to-r from-primary/8 via-white to-amber-50/70 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/70">
+                        当前回看
+                      </p>
+                      <p className="mt-1 truncate text-base font-semibold text-foreground">
+                        {dateLabel}
+                      </p>
+                    </div>
+                    {selectedDate !== todayKey && (
+                      <button
+                        onClick={() => setSelectedDate(todayKey)}
+                        className="rounded-full border border-primary/20 bg-white/78 px-3 py-1.5 text-[11px] font-medium text-primary"
+                      >
+                        回今天
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <button
                   onClick={() => jumpDay(1)}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white text-foreground transition-all hover:-translate-y-0.5"
@@ -184,83 +202,129 @@ export default function Review() {
                 </button>
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                {recentDates.map((date) => (
-                  <button
-                    key={date}
-                    onClick={() => setSelectedDate(date)}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 text-[11px] font-medium transition-all",
-                      selectedDate === date
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary/80 text-secondary-foreground"
-                    )}
-                  >
-                    {format(new Date(`${date}T12:00:00`), "M/d")}
-                  </button>
-                ))}
-                {selectedDate !== todayKey && (
-                  <button
-                    onClick={() => setSelectedDate(todayKey)}
-                    className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-[11px] font-medium text-primary"
-                  >
-                    回今天
-                  </button>
-                )}
-              </div>
-            </div>
+              <div className="mt-3 overflow-x-auto pb-1">
+                <div className="flex min-w-max gap-2">
+                  {recentDates.map((date) => {
+                    const active = selectedDate === date;
+                    const label = format(new Date(`${date}T12:00:00`), "M/d");
+                    const weekLabel = format(new Date(`${date}T12:00:00`), "EEE", { locale: zhCN });
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-[1.1fr_0.9fr]">
-              <div className="rounded-[22px] border border-border/55 bg-white/68 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                      那天在打什么
-                    </p>
-                    <p className="mt-2 text-base font-semibold text-foreground">
-                      {entry.sacredTask.title.trim() || "这天还没写神圣任务"}
+                    return (
+                      <button
+                        key={date}
+                        onClick={() => setSelectedDate(date)}
+                        className={cn(
+                          "rounded-[20px] border px-3 py-2 text-left transition-all",
+                          active
+                            ? "border-primary/25 bg-primary text-primary-foreground shadow-[0_16px_26px_-20px_hsl(var(--primary)/0.45)]"
+                            : "border-border/60 bg-white/82 text-foreground hover:-translate-y-0.5"
+                        )}
+                      >
+                        <p className={cn("text-[10px] font-semibold uppercase tracking-[0.16em]", active ? "text-primary-foreground/75" : "text-muted-foreground")}>
+                          {weekLabel}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold">{label}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-3 grid gap-3 sm:grid-cols-[1.05fr_0.95fr]">
+                <div className="rounded-[24px] border border-border/55 bg-white/72 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                        那天留下了什么
+                      </p>
+                      <p className="mt-2 text-base font-semibold text-foreground">
+                        {entry.sacredTask.title.trim() || "这天还没写神圣任务"}
+                      </p>
+                    </div>
+                    {entry.energyState && <span className="glass-chip shrink-0">{entry.energyState}</span>}
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="rounded-[18px] bg-secondary/55 px-3 py-3">
+                      <p className="text-[11px] text-muted-foreground">关键成果</p>
+                      <p className="mt-1 text-base font-semibold text-foreground">
+                        {completedKeyResults}/{entry.keyResults.filter((item) => item.title.trim()).length}
+                      </p>
+                    </div>
+                    <div className="rounded-[18px] bg-secondary/55 px-3 py-3">
+                      <p className="text-[11px] text-muted-foreground">支撑任务</p>
+                      <p className="mt-1 text-base font-semibold text-foreground">
+                        {completedSupportTasks}/{activeSupportTasks}
+                      </p>
+                    </div>
+                    <div className="rounded-[18px] bg-secondary/55 px-3 py-3">
+                      <p className="text-[11px] text-muted-foreground">临时想法</p>
+                      <p className="mt-1 text-base font-semibold text-foreground">{ideaCount}</p>
+                    </div>
+                    <div className="rounded-[18px] bg-secondary/55 px-3 py-3">
+                      <p className="text-[11px] text-muted-foreground">主角色</p>
+                      <p className="mt-1 text-base font-semibold text-foreground">
+                        {selectedRole?.name || "未设置"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-[24px] border border-border/55 bg-gradient-to-br from-primary/10 via-white/76 to-amber-50/70 p-4">
+                  <div className="flex items-center gap-2 text-primary">
+                    <Compass className="h-4 w-4" />
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em]">那段主线</p>
+                  </div>
+
+                  <div className="mt-3 rounded-[20px] bg-white/78 px-3 py-3">
+                    <p className="text-[11px] text-muted-foreground">周主题</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">
+                      {weekly.theme.trim() || "那周还没写周主题"}
                     </p>
                   </div>
-                  {entry.energyState && (
-                    <span className="glass-chip shrink-0">{entry.energyState}</span>
-                  )}
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {selectedRole && <span className="glass-chip">{selectedRole.name}</span>}
-                  <span className="glass-chip">{entry.keyResults.filter((item) => item.title.trim()).length} 条关键成果</span>
-                  <span className="glass-chip">{entry.supportTasks.filter((item) => item.title.trim()).length} 条支撑任务</span>
-                </div>
-              </div>
 
-              <div className="rounded-[22px] border border-border/55 bg-gradient-to-br from-primary/10 via-white/72 to-amber-50/70 p-4">
-                <div className="flex items-center gap-2 text-primary">
-                  <Compass className="h-4 w-4" />
-                  <p className="text-xs font-medium uppercase tracking-[0.18em]">那段主线</p>
-                </div>
-                <p className="mt-3 text-sm font-semibold text-foreground">
-                  {weekly.theme.trim() || "那周还没写周主题"}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {recentWeeks.map((week) => (
-                    <span key={week} className="glass-chip text-[11px]">
-                      周 {format(new Date(`${week}T12:00:00`), "M/d")}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-3 space-y-2">
-                  {monthly.axes.map((axis, index) => (
-                    <div key={`${selectedMonthKey}-${index}`} className="rounded-2xl bg-white/72 px-3 py-2 text-sm text-foreground">
-                      <span className="mr-2 text-xs text-muted-foreground">{index + 1}</span>
-                      {axis.trim() || "这条主线还没写"}
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {recentMonths.map((month) => (
-                    <span key={month} className="glass-chip text-[11px]">
-                      {month}
-                    </span>
-                  ))}
+                  <div className="mt-3 space-y-2">
+                    {weeklyBattleNames.length > 0 ? (
+                      weeklyBattleNames.slice(0, 3).map((battleName, index) => (
+                        <div
+                          key={`${selectedWeekStart}-${battleName}-${index}`}
+                          className="rounded-[18px] bg-white/78 px-3 py-2.5 text-sm text-foreground"
+                        >
+                          <span className="mr-2 text-xs text-muted-foreground">{index + 1}</span>
+                          {battleName}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-[18px] bg-white/72 px-3 py-3 text-sm text-muted-foreground">
+                        那周三件关键事还没写。
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    {monthly.axes.map((axis, index) => (
+                      <div
+                        key={`${selectedMonthKey}-${index}`}
+                        className="rounded-[18px] bg-white/72 px-3 py-2.5 text-sm text-foreground"
+                      >
+                        <span className="mr-2 text-xs text-muted-foreground">{index + 1}</span>
+                        {axis.trim() || "这条主线还没写"}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="glass-chip text-[11px]">周 {format(new Date(`${selectedWeekStart}T12:00:00`), "M/d")}</span>
+                    <span className="glass-chip text-[11px]">{selectedMonthKey}</span>
+                    {recentMonths
+                      .filter((month) => month !== selectedMonthKey)
+                      .slice(0, 2)
+                      .map((month) => (
+                        <span key={month} className="glass-chip text-[11px]">
+                          {month}
+                        </span>
+                      ))}
+                  </div>
                 </div>
               </div>
             </div>
