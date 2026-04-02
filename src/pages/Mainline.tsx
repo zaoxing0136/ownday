@@ -1,7 +1,17 @@
+import { useState } from "react";
+import { addMonths, addWeeks, format, startOfWeek } from "date-fns";
 import HeaderActionLink from "@/components/HeaderActionLink";
 import PilotBadge from "@/components/PilotBadge";
 import { cn } from "@/lib/utils";
-import { useMonthlyFocus, useWeeklyFocus, type TaskStatus } from "@/lib/store";
+import {
+  getMonthKey,
+  getSavedMonthKeys,
+  getSavedWeekStarts,
+  getWeekStartKey,
+  useMonthlyFocus,
+  useWeeklyFocus,
+  type TaskStatus,
+} from "@/lib/store";
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   todo: "未开始",
@@ -16,8 +26,18 @@ const NEXT_STATUS: Record<TaskStatus, TaskStatus> = {
 };
 
 export default function Mainline() {
-  const [monthly, setMonthly] = useMonthlyFocus();
-  const [weekly, setWeekly] = useWeeklyFocus();
+  const currentMonthKey = getMonthKey();
+  const currentWeekStart = getWeekStartKey();
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthKey);
+  const [selectedWeekStart, setSelectedWeekStart] = useState(currentWeekStart);
+  const [monthly, setMonthly] = useMonthlyFocus(selectedMonth);
+  const [weekly, setWeekly] = useWeeklyFocus(selectedWeekStart);
+  const recentMonths = Array.from(new Set([currentMonthKey, selectedMonth, ...getSavedMonthKeys()]))
+    .sort((a, b) => b.localeCompare(a))
+    .slice(0, 6);
+  const recentWeeks = Array.from(new Set([currentWeekStart, selectedWeekStart, ...getSavedWeekStarts()]))
+    .sort((a, b) => b.localeCompare(a))
+    .slice(0, 6);
 
   const updateMonthly = (patch: Partial<typeof monthly>) => {
     setMonthly((prev) => ({ ...prev, ...patch }));
@@ -39,6 +59,16 @@ export default function Mainline() {
     updateWeekly({ battles });
   };
 
+  const jumpMonth = (offset: number) => {
+    const next = format(addMonths(new Date(`${selectedMonth}-01T12:00:00`), offset), "yyyy-MM");
+    setSelectedMonth(next);
+  };
+
+  const jumpWeek = (offset: number) => {
+    const next = format(addWeeks(new Date(`${selectedWeekStart}T12:00:00`), offset), "yyyy-MM-dd");
+    setSelectedWeekStart(next);
+  };
+
   return (
     <div className="min-h-screen pb-28">
       <div className="page-shell">
@@ -48,6 +78,79 @@ export default function Mainline() {
             <h1 className="page-title mt-2">主线</h1>
             <div className="page-badges">
               <PilotBadge />
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="surface-card px-3 py-3">
+                <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+                  <button onClick={() => jumpMonth(-1)} className="glass-chip text-foreground">
+                    上月
+                  </button>
+                  <span>本月</span>
+                  <button onClick={() => jumpMonth(1)} className="glass-chip text-foreground">
+                    下月
+                  </button>
+                </div>
+                <input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(event) => {
+                    if (event.target.value) setSelectedMonth(event.target.value);
+                  }}
+                  className="w-full rounded-xl border border-border/60 bg-white/80 px-3 py-2 text-sm text-foreground outline-none"
+                />
+              </div>
+
+              <div className="surface-card px-3 py-3">
+                <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+                  <button onClick={() => jumpWeek(-1)} className="glass-chip text-foreground">
+                    上周
+                  </button>
+                  <span>本周</span>
+                  <button onClick={() => jumpWeek(1)} className="glass-chip text-foreground">
+                    下周
+                  </button>
+                </div>
+                <input
+                  type="date"
+                  value={selectedWeekStart}
+                  onChange={(event) => {
+                    if (!event.target.value) return;
+                    setSelectedWeekStart(
+                      format(
+                        startOfWeek(new Date(`${event.target.value}T12:00:00`), { weekStartsOn: 1 }),
+                        "yyyy-MM-dd"
+                      )
+                    );
+                  }}
+                  className="w-full rounded-xl border border-border/60 bg-white/80 px-3 py-2 text-sm text-foreground outline-none"
+                />
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {recentMonths.map((month) => (
+                <button
+                  key={month}
+                  onClick={() => setSelectedMonth(month)}
+                  className={cn(
+                    "glass-chip text-[11px]",
+                    selectedMonth === month && "border-primary/25 bg-primary/10 text-primary"
+                  )}
+                >
+                  {month}
+                </button>
+              ))}
+              {recentWeeks.map((week) => (
+                <button
+                  key={week}
+                  onClick={() => setSelectedWeekStart(week)}
+                  className={cn(
+                    "glass-chip text-[11px]",
+                    selectedWeekStart === week && "border-primary/25 bg-primary/10 text-primary"
+                  )}
+                >
+                  周 {format(new Date(`${week}T12:00:00`), "M/d")}
+                </button>
+              ))}
             </div>
           </div>
           <HeaderActionLink />

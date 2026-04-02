@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import legacy from "@vitejs/plugin-legacy";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
@@ -13,7 +14,15 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(),
+    legacy({
+      targets: ["defaults", "Android >= 7", "iOS >= 12"],
+      modernPolyfills: true,
+      renderLegacyChunks: true,
+    }),
+    mode === "development" && componentTagger(),
+  ].filter(Boolean),
   build: {
     rollupOptions: {
       output: {

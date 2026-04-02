@@ -51,6 +51,7 @@ export interface DailyReview {
 
 export type DraftStatus = "draft" | "pending";
 export type FuturePriority = "low" | "medium" | "high";
+export type FutureReminderMinutes = 0 | 10 | 30 | 60 | 1440;
 
 export interface DailyEntry {
   id: string;
@@ -87,6 +88,9 @@ export interface FutureItem {
   time?: string;
   rawInput?: string;
   priority: FuturePriority;
+  reminderMinutesBefore?: FutureReminderMinutes | null;
+  reminderAt?: string;
+  remindedAt?: string;
   relatedRoleId?: string;
   relatedWeek?: string;
   relatedMonth?: string;
@@ -208,6 +212,7 @@ const DRAFTS_KEY = "omd_draft_box";
 const FUTURE_KEY = "omd_future_schedule";
 const BACKUP_VERSION = 1;
 const STORAGE_SYNC_EVENT = "omd:storage-sync";
+const REMINDER_TIME_FALLBACK = "09:00";
 
 // ─── Helpers ─────────────────────────────────────────
 
@@ -260,6 +265,84 @@ export function getWeekStartKey(): string {
 
 export function getMonthKey(): string {
   return format(new Date(), "yyyy-MM");
+}
+
+export function getSavedDailyDates(): string[] {
+  const storage = getStorageSafely();
+  if (!storage) return [];
+  return getStorageKeys(storage)
+    .filter((key) => key.startsWith(DAILY_PREFIX))
+    .map((key) => key.slice(DAILY_PREFIX.length))
+    .sort((a, b) => b.localeCompare(a));
+}
+
+export function getSavedWeekStarts(): string[] {
+  const storage = getStorageSafely();
+  if (!storage) return [];
+  return getStorageKeys(storage)
+    .filter((key) => key.startsWith(WEEKLY_PREFIX))
+    .map((key) => key.slice(WEEKLY_PREFIX.length))
+    .sort((a, b) => b.localeCompare(a));
+}
+
+export function getSavedMonthKeys(): string[] {
+  const storage = getStorageSafely();
+  if (!storage) return [];
+  return getStorageKeys(storage)
+    .filter((key) => key.startsWith(MONTHLY_PREFIX))
+    .map((key) => key.slice(MONTHLY_PREFIX.length))
+    .sort((a, b) => b.localeCompare(a));
+}
+
+function isFutureReminderMinutes(value: unknown): value is FutureReminderMinutes {
+  return value === 0 || value === 10 || value === 30 || value === 60 || value === 1440;
+}
+
+function resolveReminderBaseTime(time?: string) {
+  const normalized = typeof time === "string" && /^\d{2}:\d{2}$/.test(time) ? time : REMINDER_TIME_FALLBACK;
+  return normalized;
+}
+
+function toReminderTimestamp(date: string, time?: string, minutesBefore?: FutureReminderMinutes | null) {
+  if (!date || minutesBefore === null || minutesBefore === undefined) return "";
+
+  const baseTime = resolveReminderBaseTime(time);
+  const base = new Date(`${date}T${baseTime}:00`);
+  if (Number.isNaN(base.getTime())) return "";
+
+  base.setMinutes(base.getMinutes() - minutesBefore);
+  return base.toISOString();
+}
+
+export function getFutureReminderLabel(item: Pick<FutureItem, "reminderMinutesBefore">) {
+  if (item.reminderMinutesBefore === null || item.reminderMinutesBefore === undefined) return "不提醒";
+  if (item.reminderMinutesBefore === 0) return "准时提醒";
+  if (item.reminderMinutesBefore === 1440) return "提前 1 天";
+  if (item.reminderMinutesBefore === 60) return "提前 1 小时";
+  return `提前 ${item.reminderMinutesBefore} 分钟`;
+}
+
+export function getDueFutureReminderItems(items: FutureItem[], now: Date = new Date()) {
+  const timestamp = now.getTime();
+  return items.filter((item) => {
+    if (!item.reminderAt || item.remindedAt) return false;
+    const reminderTime = new Date(item.reminderAt).getTime();
+    return Number.isFinite(reminderTime) && reminderTime <= timestamp;
+  });
+}
+
+export function markFutureItemsReminded(items: FutureItem[], ids: string[]) {
+  if (ids.length === 0) return items;
+  const seenAt = nowIso();
+  return items.map((item) =>
+    ids.includes(item.id)
+      ? {
+          ...item,
+          remindedAt: item.remindedAt || seenAt,
+          updatedAt: seenAt,
+        }
+      : item
+  );
 }
 
 function createDefaultDaily(date: string): DailyEntry {
@@ -548,11 +631,22 @@ function normalizeFutureItems(items: FutureItem[] | null | undefined): FutureIte
       time: typeof item.time === "string" ? item.time : "",
       rawInput: typeof item.rawInput === "string" ? item.rawInput : "",
       priority: item.priority === "low" || item.priority === "medium" || item.priority === "high" ? item.priority : "medium",
+      reminderMinutesBefore: isFutureReminderMinutes(item.reminderMinutesBefore)
+        ? item.reminderMinutesBefore
+        : null,
+      reminderAt: typeof item.reminderAt === "string" ? item.reminderAt : "",
+      remindedAt: typeof item.remindedAt === "string" ? item.remindedAt : "",
       relatedRoleId: typeof item.relatedRoleId === "string" ? item.relatedRoleId : undefined,
       relatedWeek: typeof item.relatedWeek === "string" ? item.relatedWeek : undefined,
       relatedMonth: typeof item.relatedMonth === "string" ? item.relatedMonth : undefined,
       createdAt: typeof item.createdAt === "string" && item.createdAt ? item.createdAt : nowIso(),
       updatedAt: typeof item.updatedAt === "string" && item.updatedAt ? item.updatedAt : nowIso(),
+    }))
+    .map((item) => ({
+      ...item,
+      reminderAt:
+        item.reminderAt ||
+        toReminderTimestamp(item.date, item.time, item.reminderMinutesBefore ?? null),
     }))
     .filter((item) => item.title && item.date);
 }
@@ -778,11 +872,16 @@ export function createFutureItem(input: {
   time?: string;
   rawInput?: string;
   priority?: FuturePriority;
+  reminderMinutesBefore?: FutureReminderMinutes | null;
   relatedRoleId?: string;
   relatedWeek?: string;
   relatedMonth?: string;
 }): FutureItem {
   const timestamp = nowIso();
+  const reminderMinutesBefore =
+    input.reminderMinutesBefore === null || input.reminderMinutesBefore === undefined
+      ? null
+      : input.reminderMinutesBefore;
   return {
     id: uid(),
     title: input.title.trim(),
@@ -791,6 +890,9 @@ export function createFutureItem(input: {
     time: input.time?.trim() || "",
     rawInput: input.rawInput?.trim() || "",
     priority: input.priority || "medium",
+    reminderMinutesBefore,
+    reminderAt: toReminderTimestamp(input.date, input.time?.trim() || "", reminderMinutesBefore),
+    remindedAt: "",
     relatedRoleId: input.relatedRoleId,
     relatedWeek: input.relatedWeek,
     relatedMonth: input.relatedMonth,

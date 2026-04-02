@@ -8,6 +8,7 @@ import {
   appendSupportTask,
   createDraftItem,
   createFutureItem,
+  getFutureReminderLabel,
   getMonthKey,
   insertIntoWeeklyBattles,
   useDailyEntry,
@@ -15,6 +16,7 @@ import {
   useFutureSchedule,
   useWeeklyFocus,
   type FuturePriority,
+  type FutureReminderMinutes,
 } from "@/lib/store";
 
 const PRIORITY_META: Record<FuturePriority, string> = {
@@ -22,6 +24,15 @@ const PRIORITY_META: Record<FuturePriority, string> = {
   medium: "中",
   high: "高",
 };
+
+const REMINDER_OPTIONS: Array<{ label: string; value: FutureReminderMinutes | null }> = [
+  { label: "不提醒", value: null },
+  { label: "准时提醒", value: 0 },
+  { label: "提前 10 分钟", value: 10 },
+  { label: "提前 30 分钟", value: 30 },
+  { label: "提前 1 小时", value: 60 },
+  { label: "提前 1 天", value: 1440 },
+];
 
 export default function FutureSchedule() {
   const [items, setItems] = useFutureSchedule();
@@ -34,6 +45,7 @@ export default function FutureSchedule() {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [priority, setPriority] = useState<FuturePriority>("medium");
+  const [reminderMinutesBefore, setReminderMinutesBefore] = useState<FutureReminderMinutes | null>(null);
   const [showFallback, setShowFallback] = useState(false);
 
   const parsed = useMemo(() => parseFutureQuickInput(quickInput), [quickInput]);
@@ -61,6 +73,7 @@ export default function FutureSchedule() {
         time,
         rawInput: quickInput,
         priority,
+        reminderMinutesBefore,
       }),
       ...prev,
     ]);
@@ -70,6 +83,7 @@ export default function FutureSchedule() {
     setDate("");
     setTime("");
     setPriority("medium");
+    setReminderMinutesBefore(null);
     setShowFallback(false);
     toast({ title: "已记下", description: "这件未来的事已经放好了。" });
   };
@@ -164,16 +178,36 @@ export default function FutureSchedule() {
                 <span className="glass-chip max-w-full truncate">
                   {title || "事项未识别"}
                 </span>
+                <span className="glass-chip">{getFutureReminderLabel({ reminderMinutesBefore })}</span>
               </div>
             )}
 
-            <div className="mt-5 flex items-center justify-between gap-3">
-              <button
-                onClick={() => setShowFallback((prev) => !prev)}
-                className="text-button"
-              >
-                {showManual ? "收起补充" : "手动补充"}
-              </button>
+            <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={reminderMinutesBefore === null ? "none" : String(reminderMinutesBefore)}
+                  onChange={(event) =>
+                    setReminderMinutesBefore(
+                      event.target.value === "none"
+                        ? null
+                        : (Number(event.target.value) as FutureReminderMinutes)
+                    )
+                  }
+                  className="input-surface rounded-full px-3 py-2 text-sm"
+                >
+                  {REMINDER_OPTIONS.map((option) => (
+                    <option
+                      key={option.value === null ? "none" : option.value}
+                      value={option.value === null ? "none" : option.value}
+                    >
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <button onClick={() => setShowFallback((prev) => !prev)} className="text-button">
+                  {showManual ? "收起补充" : "手动补充"}
+                </button>
+              </div>
 
               <button
                 onClick={saveFutureItem}
@@ -237,6 +271,9 @@ export default function FutureSchedule() {
                       <span className="glass-chip">{item.date}</span>
                       {item.time && <span className="glass-chip">{item.time}</span>}
                       <span className="glass-chip">优先级 {PRIORITY_META[item.priority]}</span>
+                      {item.reminderMinutesBefore !== null && item.reminderMinutesBefore !== undefined && (
+                        <span className="glass-chip">{getFutureReminderLabel(item)}</span>
+                      )}
                     </div>
                   </div>
                   <button

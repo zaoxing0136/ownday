@@ -1,17 +1,23 @@
-import { useState } from "react";
-import { format } from "date-fns";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { addDays, format } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { ArrowUpRight, Check, Plus, Trash2 } from "lucide-react";
+import { ArrowUpRight, BellRing, Check, Plus, Trash2 } from "lucide-react";
 import HeaderActionLink from "@/components/HeaderActionLink";
 import PilotBadge from "@/components/PilotBadge";
 import { toast } from "@/hooks/use-toast";
 import {
+  appendSupportTask,
   createDraftItem,
   createIdeaItem,
   getActiveRoles,
+  getDueFutureReminderItems,
   getMonthKey,
+  getFutureReminderLabel,
+  getSavedDailyDates,
+  markFutureItemsReminded,
   useDailyEntry,
   useDraftBox,
+  useFutureSchedule,
   useWeeklyFocus,
   useRoles,
   ENERGY_CONFIG,
@@ -34,18 +40,54 @@ const NEXT_STATUS: Record<TaskStatus, TaskStatus> = {
 };
 
 export default function Today() {
-  const [entry, setEntry] = useDailyEntry();
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const [selectedDate, setSelectedDate] = useState(todayKey);
+  const [entry, setEntry] = useDailyEntry(selectedDate);
   const [, setDrafts] = useDraftBox();
+  const [futureItems, setFutureItems] = useFutureSchedule();
   const [weekly] = useWeeklyFocus();
   const [roles] = useRoles();
   const activeRoles = getActiveRoles(roles);
   const [supportInput, setSupportInput] = useState("");
   const [ideaInput, setIdeaInput] = useState("");
+  const reminderToastRef = useRef("");
 
-  const dateLabel = format(new Date(), "M月d日 EEEE", { locale: zhCN });
+  const dateLabel = format(new Date(`${selectedDate}T12:00:00`), "M月d日 EEEE", { locale: zhCN });
+  const recentDates = useMemo(
+    () =>
+      Array.from(new Set([todayKey, selectedDate, ...getSavedDailyDates()]))
+        .sort((a, b) => b.localeCompare(a))
+        .slice(0, 6),
+    [selectedDate, todayKey]
+  );
+  const dueReminderItems = useMemo(
+    () => (selectedDate === todayKey ? getDueFutureReminderItems(futureItems) : []),
+    [futureItems, selectedDate, todayKey]
+  );
 
   const update = (patch: Partial<typeof entry>) => {
     setEntry((prev) => ({ ...prev, ...patch }));
+  };
+
+  useEffect(() => {
+    if (dueReminderItems.length === 0) {
+      reminderToastRef.current = "";
+      return;
+    }
+
+    const signature = dueReminderItems.map((item) => item.id).join("|");
+    if (signature === reminderToastRef.current) return;
+
+    reminderToastRef.current = signature;
+    toast({
+      title: dueReminderItems.length === 1 ? "有一条提醒" : `有 ${dueReminderItems.length} 条提醒`,
+      description: dueReminderItems[0]?.title || "去看一下今天该接哪件事。",
+    });
+  }, [dueReminderItems]);
+
+  const jumpDay = (offset: number) => {
+    const next = format(addDays(new Date(`${selectedDate}T12:00:00`), offset), "yyyy-MM-dd");
+    setSelectedDate(next);
   };
 
   const addSupportTask = () => {
@@ -137,6 +179,21 @@ export default function Today() {
     toast({ title: "已转入草稿", description: "这条想法已经挪到草稿箱。" });
   };
 
+  const acknowledgeReminder = (id: string) => {
+    setFutureItems((prev) => markFutureItemsReminded(prev, [id]));
+    toast({ title: "已收到", description: "这条提醒先帮你收住了。" });
+  };
+
+  const moveReminderToToday = (id: string) => {
+    const item = futureItems.find((candidate) => candidate.id === id);
+    if (!item) return;
+
+    const title = item.time ? `${item.time} ${item.title}` : item.title;
+    setEntry((prev) => appendSupportTask(prev, title));
+    setFutureItems((prev) => prev.filter((candidate) => candidate.id !== id));
+    toast({ title: "已拉入今天", description: "它已经进了今天的支撑任务。" });
+  };
+
   return (
     <div className="min-h-screen pb-28">
       <div className="page-shell">
@@ -152,9 +209,82 @@ export default function Today() {
                 </span>
               )}
             </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button onClick={() => jumpDay(-1)} className="glass-chip text-foreground">
+                前一天
+              </button>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(event) => {
+                  if (event.target.value) setSelectedDate(event.target.value);
+                }}
+                className="rounded-full border border-border/60 bg-white/80 px-3 py-2 text-xs text-foreground outline-none"
+              />
+              {selectedDate !== todayKey && (
+                <button onClick={() => setSelectedDate(todayKey)} className="glass-chip text-foreground">
+                  回今天
+                </button>
+              )}
+              <button onClick={() => jumpDay(1)} className="glass-chip text-foreground">
+                后一天
+              </button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {recentDates.map((date) => (
+                <button
+                  key={date}
+                  onClick={() => setSelectedDate(date)}
+                  className={cn(
+                    "glass-chip text-[11px]",
+                    selectedDate === date && "border-primary/25 bg-primary/10 text-primary"
+                  )}
+                >
+                  {format(new Date(`${date}T12:00:00`), "M/d")}
+                </button>
+              ))}
+            </div>
           </div>
           <HeaderActionLink />
         </header>
+
+        {dueReminderItems.length > 0 && (
+          <section className="section-block fade-in">
+            <div className="section-bar">
+              <h2 className="section-title">到点提醒</h2>
+            </div>
+            <div className="space-y-2">
+              {dueReminderItems.slice(0, 3).map((item) => (
+                <div key={item.id} className="stack-card">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <BellRing className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <span className="glass-chip">{item.date}</span>
+                        {item.time && <span className="glass-chip">{item.time}</span>}
+                        <span className="glass-chip">{getFutureReminderLabel(item)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button onClick={() => moveReminderToToday(item.id)} className="subtle-button">
+                      拉入今天
+                    </button>
+                    <button
+                      onClick={() => acknowledgeReminder(item.id)}
+                      className="rounded-full bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground"
+                    >
+                      收到
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="section-block fade-in">
           <div className="hero-panel px-4 py-4 sm:px-5">

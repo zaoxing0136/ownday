@@ -1,4 +1,5 @@
-import { format } from "date-fns";
+import { useState } from "react";
+import { addDays, format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { Check } from "lucide-react";
 import HeaderActionLink from "@/components/HeaderActionLink";
@@ -8,6 +9,7 @@ import {
   createDraftItem,
   getActiveRoles,
   getMonthKey,
+  getSavedDailyDates,
   getWeekStartKey,
   useDailyEntry,
   useDraftBox,
@@ -34,12 +36,17 @@ function makeReview(review?: DailyReview): DailyReview {
 }
 
 export default function Review() {
-  const [entry, setEntry] = useDailyEntry();
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const [selectedDate, setSelectedDate] = useState(todayKey);
+  const [entry, setEntry] = useDailyEntry(selectedDate);
   const [drafts, setDrafts] = useDraftBox();
   const [roles] = useRoles();
   const activeRoles = getActiveRoles(roles);
   const review = makeReview(entry.review);
-  const dateLabel = format(new Date(), "M月d日 EEEE", { locale: zhCN });
+  const dateLabel = format(new Date(`${selectedDate}T12:00:00`), "M月d日 EEEE", { locale: zhCN });
+  const recentDates = Array.from(new Set([todayKey, selectedDate, ...getSavedDailyDates()]))
+    .sort((a, b) => b.localeCompare(a))
+    .slice(0, 6);
 
   const updateReview = (patch: Partial<DailyReview>) => {
     setEntry((prev) => ({ ...prev, review: { ...review, ...patch } }));
@@ -103,6 +110,11 @@ export default function Review() {
     });
   };
 
+  const jumpDay = (offset: number) => {
+    const next = format(addDays(new Date(`${selectedDate}T12:00:00`), offset), "yyyy-MM-dd");
+    setSelectedDate(next);
+  };
+
   return (
     <div className="min-h-screen pb-28">
       <div className="page-shell">
@@ -112,6 +124,41 @@ export default function Review() {
             <h1 className="page-title mt-2">复盘</h1>
             <div className="page-badges">
               <PilotBadge />
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button onClick={() => jumpDay(-1)} className="glass-chip text-foreground">
+                前一天
+              </button>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(event) => {
+                  if (event.target.value) setSelectedDate(event.target.value);
+                }}
+                className="rounded-full border border-border/60 bg-white/80 px-3 py-2 text-xs text-foreground outline-none"
+              />
+              {selectedDate !== todayKey && (
+                <button onClick={() => setSelectedDate(todayKey)} className="glass-chip text-foreground">
+                  回今天
+                </button>
+              )}
+              <button onClick={() => jumpDay(1)} className="glass-chip text-foreground">
+                后一天
+              </button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {recentDates.map((date) => (
+                <button
+                  key={date}
+                  onClick={() => setSelectedDate(date)}
+                  className={cn(
+                    "glass-chip text-[11px]",
+                    selectedDate === date && "border-primary/25 bg-primary/10 text-primary"
+                  )}
+                >
+                  {format(new Date(`${date}T12:00:00`), "M/d")}
+                </button>
+              ))}
             </div>
           </div>
           <HeaderActionLink />
