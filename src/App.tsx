@@ -37,7 +37,7 @@ function SafeRoute({ children }: { children: ReactNode }) {
   );
 }
 
-const AppRouter = import.meta.env.PROD ? HashRouter : BrowserRouter;
+const AppRouter = import.meta.env.VITE_ROUTER_MODE === "hash" ? HashRouter : BrowserRouter;
 
 const App = () => (
   <AppRouter>
