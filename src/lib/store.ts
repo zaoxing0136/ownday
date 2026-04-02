@@ -294,6 +294,15 @@ export function getSavedMonthKeys(): string[] {
     .sort((a, b) => b.localeCompare(a));
 }
 
+export function getDailyEntrySnapshot(date: string) {
+  const storage = getStorageSafely();
+  if (!storage) return createDefaultDaily(date);
+  return normalizeDailyEntry(
+    safeParseJson<DailyEntry | null>(storage.getItem(`${DAILY_PREFIX}${date}`), null),
+    date
+  );
+}
+
 function isFutureReminderMinutes(value: unknown): value is FutureReminderMinutes {
   return value === 0 || value === 10 || value === 30 || value === 60 || value === 1440;
 }

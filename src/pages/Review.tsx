@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { addDays, format, startOfWeek } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Compass } from "lucide-react";
@@ -8,9 +8,10 @@ import { toast } from "@/hooks/use-toast";
 import {
   createDraftItem,
   getActiveRoles,
+  getDailyEntrySnapshot,
   getMonthKey,
-  getSavedMonthKeys,
   getSavedDailyDates,
+  getSavedMonthKeys,
   getWeekStartKey,
   useDailyEntry,
   useDraftBox,
@@ -44,6 +45,7 @@ export default function Review() {
   const [entry, setEntry] = useDailyEntry(selectedDate);
   const [drafts, setDrafts] = useDraftBox();
   const [roles] = useRoles();
+
   const selectedWeekStart = format(
     startOfWeek(new Date(`${selectedDate}T12:00:00`), { weekStartsOn: 1 }),
     "yyyy-MM-dd"
@@ -51,6 +53,7 @@ export default function Review() {
   const selectedMonthKey = format(new Date(`${selectedDate}T12:00:00`), "yyyy-MM");
   const [weekly] = useWeeklyFocus(selectedWeekStart);
   const [monthly] = useMonthlyFocus(selectedMonthKey);
+
   const activeRoles = getActiveRoles(roles);
   const review = makeReview(entry.review);
   const dateLabel = format(new Date(`${selectedDate}T12:00:00`), "M月d日 EEEE", { locale: zhCN });
@@ -60,12 +63,42 @@ export default function Review() {
   const recentMonths = Array.from(new Set([selectedMonthKey, getMonthKey(), ...getSavedMonthKeys()]))
     .sort((a, b) => b.localeCompare(a))
     .slice(0, 4);
+
   const selectedRole = roles.find((role) => role.id === entry.mainRole);
-  const completedKeyResults = entry.keyResults.filter((item) => item.title.trim() && item.status === "done").length;
+  const completedKeyResults = entry.keyResults.filter(
+    (item) => item.title.trim() && item.status === "done"
+  ).length;
+  const totalKeyResults = entry.keyResults.filter((item) => item.title.trim()).length;
   const activeSupportTasks = entry.supportTasks.filter((item) => item.title.trim()).length;
-  const completedSupportTasks = entry.supportTasks.filter((item) => item.title.trim() && item.done).length;
+  const completedSupportTasks = entry.supportTasks.filter(
+    (item) => item.title.trim() && item.done
+  ).length;
   const ideaCount = entry.ideaItems.filter((item) => item.text.trim()).length;
   const weeklyBattleNames = weekly.battles.map((battle) => battle.name.trim()).filter(Boolean);
+
+  const recentJournalItems = useMemo(
+    () =>
+      recentDates.map((date) => {
+        const snapshot = getDailyEntrySnapshot(date);
+        const sacred = snapshot.sacredTask.title.trim() || "这天还没写神圣任务";
+        const note =
+          snapshot.review?.bestProgress?.trim() ||
+          snapshot.review?.mood?.trim() ||
+          snapshot.ideaItems.find((item) => item.text.trim())?.text.trim() ||
+          "";
+
+        return {
+          date,
+          sacred,
+          note,
+          finished: Boolean(snapshot.review?.completed || snapshot.sacredTask.done),
+          supportCount: snapshot.supportTasks.filter((item) => item.title.trim()).length,
+          shortLabel: format(new Date(`${date}T12:00:00`), "M/d"),
+          weekdayLabel: format(new Date(`${date}T12:00:00`), "EEE", { locale: zhCN }),
+        };
+      }),
+    [recentDates]
+  );
 
   const updateReview = (patch: Partial<DailyReview>) => {
     setEntry((prev) => ({ ...prev, review: { ...review, ...patch } }));
@@ -166,71 +199,150 @@ export default function Review() {
               </div>
             </div>
 
-            <div className="mt-5 rounded-[28px] border border-border/55 bg-[linear-gradient(180deg,hsl(0_0%_100%/0.82),hsl(42_48%_96%/0.96))] p-3 shadow-[0_18px_45px_-36px_rgba(15,23,42,0.4)]">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => jumpDay(-1)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white text-foreground transition-all hover:-translate-y-0.5"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <div className="min-w-0 flex-1 rounded-[22px] border border-primary/10 bg-gradient-to-r from-primary/8 via-white to-amber-50/70 px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/70">
-                        当前回看
-                      </p>
-                      <p className="mt-1 truncate text-base font-semibold text-foreground">
-                        {dateLabel}
-                      </p>
+            <div className="mt-5 grid gap-3 lg:grid-cols-[0.95fr_1.05fr]">
+              <div className="rounded-[28px] border border-border/55 bg-[linear-gradient(180deg,hsl(0_0%_100%/0.84),hsl(42_48%_96%/0.98))] p-3 shadow-[0_18px_45px_-36px_rgba(15,23,42,0.4)]">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => jumpDay(-1)}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white text-foreground transition-all hover:-translate-y-0.5"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <div className="min-w-0 flex-1 rounded-[22px] border border-primary/10 bg-gradient-to-r from-primary/8 via-white to-amber-50/70 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/70">
+                          当前回看
+                        </p>
+                        <p className="mt-1 truncate text-base font-semibold text-foreground">
+                          {dateLabel}
+                        </p>
+                      </div>
+                      {selectedDate !== todayKey && (
+                        <button
+                          onClick={() => setSelectedDate(todayKey)}
+                          className="rounded-full border border-primary/20 bg-white/78 px-3 py-1.5 text-[11px] font-medium text-primary"
+                        >
+                          回今天
+                        </button>
+                      )}
                     </div>
-                    {selectedDate !== todayKey && (
-                      <button
-                        onClick={() => setSelectedDate(todayKey)}
-                        className="rounded-full border border-primary/20 bg-white/78 px-3 py-1.5 text-[11px] font-medium text-primary"
-                      >
-                        回今天
-                      </button>
-                    )}
+                  </div>
+                  <button
+                    onClick={() => jumpDay(1)}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white text-foreground transition-all hover:-translate-y-0.5"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="mt-3 overflow-hidden rounded-[24px] border border-border/60 bg-white/76 px-3 py-3">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                        最近几天
+                      </p>
+                      <p className="mt-1 text-sm text-foreground">像翻日志一样回看。</p>
+                    </div>
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(event) => {
+                        if (event.target.value) setSelectedDate(event.target.value);
+                      }}
+                      className="rounded-full border border-border/60 bg-white px-3 py-2 text-xs text-foreground outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    {recentJournalItems.map((item, index) => {
+                      const active = item.date === selectedDate;
+
+                      return (
+                        <button
+                          key={item.date}
+                          onClick={() => setSelectedDate(item.date)}
+                          className={cn(
+                            "group relative flex w-full gap-3 rounded-[22px] px-3 py-3 text-left transition-all",
+                            active
+                              ? "bg-primary text-primary-foreground shadow-[0_18px_30px_-22px_hsl(var(--primary)/0.48)]"
+                              : "bg-secondary/55 text-foreground hover:-translate-y-0.5 hover:bg-white/92"
+                          )}
+                        >
+                          <div className="relative flex w-10 shrink-0 flex-col items-center">
+                            <span
+                              className={cn(
+                                "mt-1 h-2.5 w-2.5 rounded-full",
+                                active ? "bg-primary-foreground" : item.finished ? "bg-success" : "bg-primary/35"
+                              )}
+                            />
+                            {index < recentJournalItems.length - 1 && (
+                              <span
+                                className={cn(
+                                  "mt-2 h-full w-px flex-1",
+                                  active ? "bg-primary-foreground/24" : "bg-border/80"
+                                )}
+                              />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <p
+                                className={cn(
+                                  "text-[10px] font-semibold uppercase tracking-[0.16em]",
+                                  active ? "text-primary-foreground/76" : "text-muted-foreground"
+                                )}
+                              >
+                                {item.weekdayLabel}
+                              </p>
+                              {item.finished && (
+                                <span
+                                  className={cn(
+                                    "rounded-full px-2 py-1 text-[10px] font-medium",
+                                    active
+                                      ? "bg-primary-foreground/14 text-primary-foreground"
+                                      : "bg-success/12 text-success"
+                                  )}
+                                >
+                                  已收口
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1 text-sm font-semibold">{item.shortLabel}</p>
+                            <p className="mt-1 truncate text-sm">{item.sacred}</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <span
+                                className={cn(
+                                  "rounded-full px-2 py-1 text-[10px] font-medium",
+                                  active
+                                    ? "bg-primary-foreground/14 text-primary-foreground/88"
+                                    : "bg-white/74 text-muted-foreground"
+                                )}
+                              >
+                                {item.supportCount} 条支撑任务
+                              </span>
+                              {item.note && (
+                                <span
+                                  className={cn(
+                                    "max-w-[11rem] truncate rounded-full px-2 py-1 text-[10px] font-medium",
+                                    active
+                                      ? "bg-primary-foreground/14 text-primary-foreground/88"
+                                      : "bg-white/74 text-muted-foreground"
+                                  )}
+                                >
+                                  {item.note}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-                <button
-                  onClick={() => jumpDay(1)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white text-foreground transition-all hover:-translate-y-0.5"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
               </div>
 
-              <div className="mt-3 overflow-x-auto pb-1">
-                <div className="flex min-w-max gap-2">
-                  {recentDates.map((date) => {
-                    const active = selectedDate === date;
-                    const label = format(new Date(`${date}T12:00:00`), "M/d");
-                    const weekLabel = format(new Date(`${date}T12:00:00`), "EEE", { locale: zhCN });
-
-                    return (
-                      <button
-                        key={date}
-                        onClick={() => setSelectedDate(date)}
-                        className={cn(
-                          "rounded-[20px] border px-3 py-2 text-left transition-all",
-                          active
-                            ? "border-primary/25 bg-primary text-primary-foreground shadow-[0_16px_26px_-20px_hsl(var(--primary)/0.45)]"
-                            : "border-border/60 bg-white/82 text-foreground hover:-translate-y-0.5"
-                        )}
-                      >
-                        <p className={cn("text-[10px] font-semibold uppercase tracking-[0.16em]", active ? "text-primary-foreground/75" : "text-muted-foreground")}>
-                          {weekLabel}
-                        </p>
-                        <p className="mt-1 text-sm font-semibold">{label}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="mt-3 grid gap-3 sm:grid-cols-[1.05fr_0.95fr]">
+              <div className="grid gap-3">
                 <div className="rounded-[24px] border border-border/55 bg-white/72 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
@@ -248,7 +360,7 @@ export default function Review() {
                     <div className="rounded-[18px] bg-secondary/55 px-3 py-3">
                       <p className="text-[11px] text-muted-foreground">关键成果</p>
                       <p className="mt-1 text-base font-semibold text-foreground">
-                        {completedKeyResults}/{entry.keyResults.filter((item) => item.title.trim()).length}
+                        {completedKeyResults}/{totalKeyResults}
                       </p>
                     </div>
                     <div className="rounded-[18px] bg-secondary/55 px-3 py-3">
@@ -314,7 +426,9 @@ export default function Review() {
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="glass-chip text-[11px]">周 {format(new Date(`${selectedWeekStart}T12:00:00`), "M/d")}</span>
+                    <span className="glass-chip text-[11px]">
+                      周 {format(new Date(`${selectedWeekStart}T12:00:00`), "M/d")}
+                    </span>
                     <span className="glass-chip text-[11px]">{selectedMonthKey}</span>
                     {recentMonths
                       .filter((month) => month !== selectedMonthKey)
@@ -507,9 +621,7 @@ export default function Review() {
           onClick={() => updateReview({ completed: true })}
           className={cn(
             "w-full rounded-full px-4 py-3 text-sm font-semibold transition-all",
-            review.completed
-              ? "bg-success text-success-foreground"
-              : "bg-primary text-primary-foreground"
+            review.completed ? "bg-success text-success-foreground" : "bg-primary text-primary-foreground"
           )}
         >
           {review.completed ? (
