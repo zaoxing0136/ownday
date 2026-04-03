@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting…</title>
+    <script>
+      (function () {
+        var base = "/ownday";
+        var pathname = window.location.pathname;
+        var relativePath = pathname.indexOf(base) === 0 ? pathname.slice(base.length) : pathname;
+        var normalized = relativePath.charAt(0) === "/" ? relativePath : "/" + relativePath;
+        var search = window.location.search || "";
+        var hash = window.location.hash || "";
+        window.location.replace(base + "/#" + normalized + search + hash);
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>

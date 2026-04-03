@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import PilotBadge from "@/components/PilotBadge";
 import { toast } from "@/hooks/use-toast";
+import { getHomeHref } from "@/lib/navigation";
 import {
   buildOwnMyDayBackup,
   createRole,
@@ -394,7 +395,7 @@ export default function Settings() {
         </section>
 
         <button
-          onClick={() => window.location.assign("/")}
+          onClick={() => window.location.assign(getHomeHref())}
           className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border bg-card px-4 py-3 text-sm font-medium text-foreground"
         >
           <RotateCcw className="h-4 w-4" />

@@ -21,8 +21,8 @@ function RouteFallback() {
       <div className="page-shell">
         <div className="hero-panel p-5">
           <p className="soft-kicker">OWN MY DAY</p>
-          <p className="mt-3 text-lg font-semibold text-foreground">页面正在展开</p>
-          <p className="mt-2 text-sm text-muted-foreground">再等一下，就好了。</p>
+          <p className="mt-3 text-lg font-semibold text-foreground">页面正在打开</p>
+          <p className="mt-2 text-sm text-muted-foreground">再等一下，马上就好。</p>
         </div>
       </div>
     </div>

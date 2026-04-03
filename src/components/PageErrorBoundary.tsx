@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { getHomeHref } from "@/lib/navigation";
 
 interface PageErrorBoundaryProps {
   children: ReactNode;
@@ -32,7 +33,7 @@ export default class PageErrorBoundary extends Component<
             <div className="rounded-2xl border border-destructive/20 bg-card p-5">
               <p className="text-sm font-semibold">这个页面刚刚出错了</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                数据还在，本次先回到安全状态。你可以重试，或先去别的页面继续用。
+                数据还在，这次先回到安全状态。你可以重试，或者先去别的页面继续用。
               </p>
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
                 <button
@@ -42,7 +43,7 @@ export default class PageErrorBoundary extends Component<
                   重试当前页
                 </button>
                 <button
-                  onClick={() => window.location.assign("/")}
+                  onClick={() => window.location.assign(getHomeHref())}
                   className="rounded-lg border px-4 py-3 text-sm font-medium text-foreground"
                 >
                   回到今日页
